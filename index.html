@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>비트코인 자산 현황</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg:#0e1014; --card:#16191f; --bg2:#111318; --border:#23282f;
+    --accent:#f7931a; --green:#00d68f; --red:#ff4757;
+    --text:#e2e8f0; --sub:#6b7280;
+    --mono:'Space Mono',monospace; --sans:'Noto Sans KR',sans-serif;
+  }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans);
+    min-height:100vh; padding:24px 16px 60px; max-width:480px; margin:0 auto; }
+
+  .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .header-left { display:flex; align-items:center; gap:11px; }
+  .btc-icon { width:38px;height:38px; background:linear-gradient(135deg,#f7931a,#fbbf24);
+    border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .header-title { font-size:16px; font-weight:700; letter-spacing:-.3px; }
+  .header-sub { font-size:11px; color:var(--sub); font-family:var(--mono); margin-top:2px; }
+
+  .refresh-btn { background:var(--card); border:1px solid var(--border); border-radius:9px;
+    padding:8px 14px; color:var(--sub); font-size:12px; font-family:var(--mono);
+    cursor:pointer; display:flex; align-items:center; gap:6px; transition:all .15s; }
+  .refresh-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .refresh-btn.spin svg { animation:rot .7s linear infinite; }
+  @keyframes rot { to { transform:rotate(360deg); } }
+
+  .price-card { background:var(--card); border:1px solid var(--border); border-radius:18px;
+    padding:22px 20px; margin-bottom:14px; position:relative; overflow:hidden; }
+  .price-card::before { content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse at 90% 0%,rgba(247,147,26,.09),transparent 55%); pointer-events:none; }
+  .pc-label { font-size:11px; letter-spacing:1.8px; color:var(--sub); margin-bottom:12px; }
+  .pc-main { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:5px; }
+  .pc-price { font-family:var(--mono); font-size:34px; font-weight:700;
+    color:var(--accent); letter-spacing:-1.5px; line-height:1; }
+  .badge { font-family:var(--mono); font-size:12px; font-weight:700; padding:4px 10px; border-radius:7px; }
+  .badge.up   { background:rgba(0,214,143,.13); color:var(--green); }
+  .badge.down { background:rgba(255,71,87,.13); color:var(--red); }
+  .badge.neu  { background:rgba(255,255,255,.06); color:var(--sub); }
+  .pc-sub { font-family:var(--mono); font-size:13px; margin-bottom:14px; }
+  .pc-row { display:flex; gap:20px; flex-wrap:wrap; padding-top:12px; border-top:1px solid var(--border); }
+  .pc-stat-label { font-size:10px; color:var(--sub); letter-spacing:.5px; margin-bottom:3px; }
+  .pc-stat-val { font-family:var(--mono); font-size:12px; color:var(--text); }
+  .live-row { display:flex; align-items:center; gap:7px; margin-top:12px; }
+  .dot { width:6px;height:6px;border-radius:50%;background:var(--green);animation:bl 1.6s infinite;flex-shrink:0; }
+  @keyframes bl { 0%,100%{opacity:1}50%{opacity:.2} }
+  .live-txt { font-size:11px; color:var(--sub); font-family:var(--mono); }
+
+  .summary-card { background:var(--card); border:1px solid rgba(247,147,26,.28);
+    border-radius:18px; padding:20px; margin-bottom:16px; }
+  .sc-title { font-size:11px; letter-spacing:1.5px; color:var(--sub); margin-bottom:14px; }
+  .sc-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .sc-item { background:var(--bg2); border-radius:11px; padding:13px 14px; }
+  .sc-label { font-size:10px; color:var(--sub); letter-spacing:.5px; margin-bottom:5px; }
+  .sc-val { font-family:var(--mono); font-size:16px; font-weight:700; line-height:1.2; }
+  .sc-sub { font-family:var(--mono); font-size:11px; color:var(--sub); margin-top:3px; }
+
+  .sec-title { font-size:11px; letter-spacing:1.8px; text-transform:uppercase;
+    color:var(--sub); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+  .sec-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .widget { background:var(--card); border:1px solid var(--border); border-radius:15px;
+    padding:16px 16px 16px 20px; margin-bottom:10px; position:relative; overflow:hidden; }
+  .widget::before { content:''; position:absolute; left:0;top:0;bottom:0;
+    width:4px; border-radius:4px 0 0 4px; }
+  .widget.profit::before { background:var(--green); }
+  .widget.loss::before { background:var(--red); }
+
+  .w-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:13px; }
+  .w-name { font-size:13px; font-weight:700; }
+  .w-qty { font-family:var(--mono); font-size:11px; color:var(--sub); margin-top:3px; }
+  .w-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .w-stat { background:var(--bg2); border-radius:9px; padding:10px 12px; }
+  .ws-label { font-size:10px; color:var(--sub); letter-spacing:.5px; margin-bottom:4px; }
+  .ws-val { font-family:var(--mono); font-size:13px; font-weight:700; line-height:1.3; }
+  .ws-sub { font-family:var(--mono); font-size:10px; color:var(--sub); margin-top:2px; }
+
+  .ca{color:var(--accent);} .cg{color:var(--green);} .cr{color:var(--red);}
+
+  .err { background:rgba(255,71,87,.08); border:1px solid rgba(255,71,87,.25);
+    border-radius:12px; padding:14px; font-size:13px; color:var(--red);
+    text-align:center; margin-bottom:14px; display:none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="btc-icon">₿</div>
+    <div>
+      <div class="header-title">비트코인 자산 현황</div>
+      <div class="header-sub" id="updatedAt">불러오는 중...</div>
+    </div>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" onclick="loadPrice()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M21 2v6h-6M3 12a9 9 0 0115-6.7L21 8M3 22v-6h6M21 12a9 9 0 01-15 6.7L3 16"/>
+    </svg>갱신
+  </button>
+</div>
+
+<div class="err" id="err"></div>
+
+<div class="price-card">
+  <div class="pc-label">비트코인 · BTC/KRW · 업비트</div>
+  <div class="pc-main">
+    <div class="pc-price" id="priceKrw">—</div>
+    <div class="badge neu" id="chgBadge">—</div>
+  </div>
+  <div class="pc-sub" id="chgAmt"></div>
+  <div class="pc-row" id="priceRow"></div>
+  <div class="live-row">
+    <div class="dot"></div>
+    <div class="live-txt" id="liveTxt">실시간 로딩 중</div>
+  </div>
+</div>
+
+<div class="summary-card">
+  <div class="sc-title">전체 요약 · 0.03497359 비트코인</div>
+  <div class="sc-grid">
+    <div class="sc-item"><div class="sc-label">총 평가액</div><div class="sc-val ca" id="sumEval">—</div></div>
+    <div class="sc-item"><div class="sc-label">총 투자금</div><div class="sc-val" id="sumCost">₩3,997,975</div></div>
+    <div class="sc-item"><div class="sc-label">총 수익금</div><div class="sc-val" id="sumPnl">—</div></div>
+    <div class="sc-item">
+      <div class="sc-label">수익률</div>
+      <div class="sc-val" id="sumPct">—</div>
+      <div class="sc-sub" id="sumSub"></div>
+    </div>
+  </div>
+</div>
+
+<div class="sec-title">개별 보유 내역</div>
+<div id="widgetList"></div>
+
+<script>
+const HOLDINGS = [
+  { label:'매수 1', qty:0.00328186, avgKrw:114_315_000 },
+  { label:'매수 2', qty:0.03156483, avgKrw:114_314_000 },
+  { label:'매수 3', qty:0.00012690, avgKrw:114_315_000 },
+];
+const TOTAL_QTY  = HOLDINGS.reduce((s,h)=>s+h.qty,0);
+const TOTAL_COST = HOLDINGS.reduce((s,h)=>s+h.qty*h.avgKrw,0);
+let curKrw = null;
+
+const fk = n => '₩'+Math.round(n).toLocaleString('ko-KR');
+const fp = n => (n>=0?'+':'')+n.toFixed(2)+'%';
+const fsign = n => (n>=0?'+':'-')+fk(Math.abs(n));
+
+async function loadPrice() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spin');
+  document.getElementById('err').style.display='none';
+  try {
+    const res  = await fetch('https://api.upbit.com/v1/ticker?markets=KRW-BTC');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const [t]  = await res.json();
+    curKrw = t.trade_price;
+    const chgPct = t.signed_change_rate*100;
+    const chgAmt = t.signed_change_price;
+
+    document.getElementById('priceKrw').textContent = fk(curKrw);
+    const cb = document.getElementById('chgBadge');
+    cb.textContent = fp(chgPct);
+    cb.className = 'badge '+(chgPct>0?'up':chgPct<0?'down':'neu');
+    const ca = document.getElementById('chgAmt');
+    ca.textContent = (chgAmt>=0?'▲ +':'▼ ')+fk(Math.abs(chgAmt))+' (전일 대비)';
+    ca.style.color = chgPct>0?'var(--green)':chgPct<0?'var(--red)':'var(--sub)';
+    document.getElementById('priceRow').innerHTML = `
+      <div><div class="pc-stat-label">24H 고가</div><div class="pc-stat-val">${fk(t.high_price)}</div></div>
+      <div><div class="pc-stat-label">24H 저가</div><div class="pc-stat-val">${fk(t.low_price)}</div></div>
+      <div><div class="pc-stat-label">거래대금</div><div class="pc-stat-val">${(t.acc_trade_price_24h/1e8).toFixed(0)}억</div></div>`;
+    const now = new Date().toLocaleTimeString('ko-KR');
+    document.getElementById('updatedAt').textContent = now+' 업데이트';
+    document.getElementById('liveTxt').textContent = '1분마다 자동 갱신 · 업비트';
+    renderAll();
+  } catch(e) {
+    const el=document.getElementById('err');
+    el.textContent='가격 로드 실패: '+e.message;
+    el.style.display='block';
+    document.getElementById('updatedAt').textContent='로드 실패';
+  }
+  btn.classList.remove('spin');
+}
+
+function renderAll() {
+  if(!curKrw) return;
+  const evalTotal = TOTAL_QTY*curKrw;
+  const pnl = evalTotal-TOTAL_COST;
+  const pct = (pnl/TOTAL_COST)*100;
+  const pc = pnl>=0?'cg':'cr';
+  document.getElementById('sumEval').textContent = fk(evalTotal);
+  document.getElementById('sumPnl').textContent  = fsign(pnl);
+  document.getElementById('sumPnl').className    = 'sc-val '+pc;
+  document.getElementById('sumPct').textContent  = fp(pct);
+  document.getElementById('sumPct').className    = 'sc-val '+pc;
+  document.getElementById('sumSub').textContent  = pnl>=0?'수익 중 🟢':'손실 중 🔴';
+
+  document.getElementById('widgetList').innerHTML = HOLDINGS.map(h=>{
+    const evalV=h.qty*curKrw, costV=h.qty*h.avgKrw, pnlV=evalV-costV;
+    const pctV=(pnlV/costV)*100, cls=pnlV>=0?'profit':'loss', cc=pnlV>=0?'cg':'cr';
+    return `
+    <div class="widget ${cls}">
+      <div class="w-head">
+        <div><div class="w-name">${h.label}</div><div class="w-qty">${h.qty.toFixed(8)} 비트코인</div></div>
+        <div class="badge ${pnlV>=0?'up':'down'}">${fp(pctV)}</div>
+      </div>
+      <div class="w-grid">
+        <div class="w-stat"><div class="ws-label">평단가</div><div class="ws-val">${fk(h.avgKrw)}</div><div class="ws-sub">매수 기준가</div></div>
+        <div class="w-stat"><div class="ws-label">현재가</div><div class="ws-val ca">${fk(curKrw)}</div><div class="ws-sub">업비트 실시간</div></div>
+        <div class="w-stat"><div class="ws-label">평가액</div><div class="ws-val">${fk(evalV)}</div><div class="ws-sub">투자금 ${fk(costV)}</div></div>
+        <div class="w-stat"><div class="ws-label">수익금</div><div class="ws-val ${cc}">${fsign(pnlV)}</div><div class="ws-sub ${cc}">${fp(pctV)}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+loadPrice();
+setInterval(loadPrice,60000);
+</script>
+</body>
+</html>

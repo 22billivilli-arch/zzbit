@@ -135,7 +135,18 @@
   <svg id="roomSvg" class="room-scene" viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg"></svg>
   <div class="viz-overlay">
     <div class="viz-status" id="vizStatus">로딩 중...</div>
-    <div class="viz-pnl" id="vizPnl"></div>
+  </div>
+  <!-- 공동 수익금 배너 -->
+  <div id="pnlBanner" style="padding:18px 20px 14px;display:flex;align-items:center;justify-content:space-between;background:var(--card);border-top:1px solid var(--border);">
+    <div>
+      <div style="font-size:10px;letter-spacing:1.8px;color:#6b7280;margin-bottom:6px;text-transform:uppercase;">공동 수익금</div>
+      <div id="bigPnl" style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;letter-spacing:-1.5px;line-height:1;color:#e2e8f0;">—</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;letter-spacing:1.8px;color:#6b7280;margin-bottom:6px;text-transform:uppercase;">수익률</div>
+      <div id="bigPct" style="font-family:'Space Mono',monospace;font-size:28px;font-weight:700;line-height:1;color:#e2e8f0;">—</div>
+      <div id="bigSub" style="font-size:11px;color:#6b7280;margin-top:5px;font-family:'Space Mono',monospace;"></div>
+    </div>
   </div>
   <div class="gauge-wrap">
     <div class="gauge-label"><span>손실</span><span id="gaugeLabel">—</span><span>수익</span></div>
@@ -726,7 +737,17 @@ function renderAll() {
   let lv=jointPct>=20?5:jointPct>=10?4:jointPct>=3?3:jointPct>=0?2:jointPct>=-5?1:0;
   document.getElementById('vizStatus').textContent=statusTexts[lv];
   document.getElementById('vizStatus').style.color=lv>=2?'var(--green)':'var(--red)';
-  document.getElementById('vizPnl').textContent=`공동 수익금 ${fsign(jointPnl)}  (${fp(jointPct)})`;
+
+  // 공동 수익금 배너 색상: 수익=빨간색(#ff4757), 손실=파란색(#3b82f6)
+  const pnlColor = jointPnl >= 0 ? '#ff4757' : '#3b82f6';
+  const banner   = document.getElementById('pnlBanner');
+  banner.style.background      = jointPnl >= 0 ? 'rgba(255,71,87,0.08)'  : 'rgba(59,130,246,0.08)';
+  banner.style.borderTop       = jointPnl >= 0 ? '1px solid rgba(255,71,87,0.25)' : '1px solid rgba(59,130,246,0.25)';
+  document.getElementById('bigPnl').style.color = pnlColor;
+  document.getElementById('bigPnl').textContent = fsign(jointPnl);
+  document.getElementById('bigPct').style.color = pnlColor;
+  document.getElementById('bigPct').textContent = fp(jointPct);
+  document.getElementById('bigSub').textContent = jointPnl >= 0 ? '🔴 수익 중' : '🔵 손실 중';
 
   // 예진
   const hc=halfPnl>=0?'cg':'cr';

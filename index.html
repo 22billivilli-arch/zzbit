@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> 찌찌의 자산 현황💵</title>
+<title>비트코인 자산 현황</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -16,6 +16,7 @@
   body { background:var(--bg); color:var(--text); font-family:var(--sans);
     min-height:100vh; padding:24px 16px 60px; max-width:480px; margin:0 auto; }
 
+  /* 헤더 */
   .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
   .header-left { display:flex; align-items:center; gap:11px; }
   .btc-icon { width:38px;height:38px; background:linear-gradient(135deg,#f7931a,#fbbf24);
@@ -30,6 +31,7 @@
   .refresh-btn.spin svg { animation:rot .7s linear infinite; }
   @keyframes rot { to { transform:rotate(360deg); } }
 
+  /* 현재가 카드 */
   .price-card { background:var(--card); border:1px solid var(--border); border-radius:18px;
     padding:22px 20px; margin-bottom:14px; position:relative; overflow:hidden; }
   .price-card::before { content:''; position:absolute; inset:0;
@@ -51,8 +53,9 @@
   @keyframes bl { 0%,100%{opacity:1}50%{opacity:.2} }
   .live-txt { font-size:11px; color:var(--sub); font-family:var(--mono); }
 
+  /* 전체 요약 */
   .summary-card { background:var(--card); border:1px solid rgba(247,147,26,.28);
-    border-radius:18px; padding:20px; margin-bottom:16px; }
+    border-radius:18px; padding:20px; margin-bottom:14px; }
   .sc-title { font-size:11px; letter-spacing:1.5px; color:var(--sub); margin-bottom:14px; }
   .sc-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .sc-item { background:var(--bg2); border-radius:11px; padding:13px 14px; }
@@ -60,27 +63,40 @@
   .sc-val { font-family:var(--mono); font-size:16px; font-weight:700; line-height:1.2; }
   .sc-sub { font-family:var(--mono); font-size:11px; color:var(--sub); margin-top:3px; }
 
+  /* 지분 카드 */
+  .person-card { background:var(--card); border:1px solid var(--border);
+    border-radius:18px; padding:20px; margin-bottom:12px; position:relative; overflow:hidden; }
+  .person-card.yejin { border-color: rgba(139,92,246,.35); }
+  .person-card.yeho  { border-color: rgba(247,147,26,.35); }
+  .person-card.yejin::before { content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse at 90% 0%,rgba(139,92,246,.07),transparent 55%); pointer-events:none; }
+  .person-card.yeho::before  { content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse at 90% 0%,rgba(247,147,26,.07),transparent 55%); pointer-events:none; }
+
+  .person-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .person-avatar { width:36px;height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:700; flex-shrink:0; }
+  .avatar-yejin { background:linear-gradient(135deg,#8b5cf6,#c084fc); color:#fff; }
+  .avatar-yeho  { background:linear-gradient(135deg,#f7931a,#fbbf24); color:#000; }
+  .person-name  { font-size:15px; font-weight:700; }
+  .person-share { font-size:11px; color:var(--sub); font-family:var(--mono); margin-top:2px; }
+  .person-badge { margin-left:auto; font-family:var(--mono); font-size:13px;
+    font-weight:700; padding:4px 12px; border-radius:8px; }
+
+  .person-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .p-stat { background:var(--bg2); border-radius:10px; padding:12px 13px; }
+  .ps-label { font-size:10px; color:var(--sub); letter-spacing:.5px; margin-bottom:4px; }
+  .ps-val { font-family:var(--mono); font-size:14px; font-weight:700; line-height:1.3; }
+  .ps-sub { font-family:var(--mono); font-size:10px; color:var(--sub); margin-top:2px; }
+
   .sec-title { font-size:11px; letter-spacing:1.8px; text-transform:uppercase;
-    color:var(--sub); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+    color:var(--sub); margin-bottom:12px;
+    display:flex; align-items:center; gap:8px; }
   .sec-title::after { content:''; flex:1; height:1px; background:var(--border); }
 
-  .widget { background:var(--card); border:1px solid var(--border); border-radius:15px;
-    padding:16px 16px 16px 20px; margin-bottom:10px; position:relative; overflow:hidden; }
-  .widget::before { content:''; position:absolute; left:0;top:0;bottom:0;
-    width:4px; border-radius:4px 0 0 4px; }
-  .widget.profit::before { background:var(--green); }
-  .widget.loss::before { background:var(--red); }
-
-  .w-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:13px; }
-  .w-name { font-size:13px; font-weight:700; }
-  .w-qty { font-family:var(--mono); font-size:11px; color:var(--sub); margin-top:3px; }
-  .w-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .w-stat { background:var(--bg2); border-radius:9px; padding:10px 12px; }
-  .ws-label { font-size:10px; color:var(--sub); letter-spacing:.5px; margin-bottom:4px; }
-  .ws-val { font-family:var(--mono); font-size:13px; font-weight:700; line-height:1.3; }
-  .ws-sub { font-family:var(--mono); font-size:10px; color:var(--sub); margin-top:2px; }
-
   .ca{color:var(--accent);} .cg{color:var(--green);} .cr{color:var(--red);}
+  .cv{color:#c084fc;}
 
   .err { background:rgba(255,71,87,.08); border:1px solid rgba(255,71,87,.25);
     border-radius:12px; padding:14px; font-size:13px; color:var(--red);
@@ -106,6 +122,7 @@
 
 <div class="err" id="err"></div>
 
+<!-- 현재가 -->
 <div class="price-card">
   <div class="pc-label">비트코인 · BTC/KRW · 업비트</div>
   <div class="pc-main">
@@ -120,11 +137,12 @@
   </div>
 </div>
 
+<!-- 전체 요약 -->
 <div class="summary-card">
   <div class="sc-title">전체 요약 · 0.03497359 비트코인</div>
   <div class="sc-grid">
     <div class="sc-item"><div class="sc-label">총 평가액</div><div class="sc-val ca" id="sumEval">—</div></div>
-    <div class="sc-item"><div class="sc-label">총 투자금</div><div class="sc-val" id="sumCost">₩3,997,975</div></div>
+    <div class="sc-item"><div class="sc-label">총 투자금</div><div class="sc-val">₩3,997,975</div></div>
     <div class="sc-item"><div class="sc-label">총 수익금</div><div class="sc-val" id="sumPnl">—</div></div>
     <div class="sc-item">
       <div class="sc-label">수익률</div>
@@ -134,93 +152,144 @@
   </div>
 </div>
 
-<div class="sec-title">개별 보유 내역</div>
-<div id="widgetList"></div>
+<!-- 지분 -->
+<div class="sec-title">지분 현황 · 각 50%</div>
+
+<!-- 예진 -->
+<div class="person-card yejin">
+  <div class="person-header">
+    <div class="person-avatar avatar-yejin">예</div>
+    <div>
+      <div class="person-name">예진</div>
+      <div class="person-share">0.01748680 비트코인 · 50%</div>
+    </div>
+    <div class="person-badge badge neu" id="yejinBadge">—</div>
+  </div>
+  <div class="person-grid">
+    <div class="p-stat"><div class="ps-label">평가액</div><div class="ps-val cv" id="yejinEval">—</div></div>
+    <div class="p-stat"><div class="ps-label">투자금</div><div class="ps-val">₩1,998,988</div></div>
+    <div class="p-stat"><div class="ps-label">수익금</div><div class="ps-val" id="yejinPnl">—</div></div>
+    <div class="p-stat"><div class="ps-label">수익률</div><div class="ps-val" id="yejinPct">—</div><div class="ps-sub" id="yejinSub"></div></div>
+  </div>
+</div>
+
+<!-- 제호 -->
+<div class="person-card yeho">
+  <div class="person-header">
+    <div class="person-avatar avatar-yeho">제</div>
+    <div>
+      <div class="person-name">제호</div>
+      <div class="person-share">0.01748680 비트코인 · 50%</div>
+    </div>
+    <div class="person-badge badge neu" id="yehoBadge">—</div>
+  </div>
+  <div class="person-grid">
+    <div class="p-stat"><div class="ps-label">평가액</div><div class="ps-val ca" id="yehoEval">—</div></div>
+    <div class="p-stat"><div class="ps-label">투자금</div><div class="ps-val">₩1,998,988</div></div>
+    <div class="p-stat"><div class="ps-label">수익금</div><div class="ps-val" id="yehoPnl">—</div></div>
+    <div class="p-stat"><div class="ps-label">수익률</div><div class="ps-val" id="yehoPct">—</div><div class="ps-sub" id="yehoSub"></div></div>
+  </div>
+</div>
 
 <script>
-const HOLDINGS = [
-  { label:'매수 1', qty:0.00328186, avgKrw:114_315_000 },
-  { label:'매수 2', qty:0.03156483, avgKrw:114_314_000 },
-  { label:'매수 3', qty:0.00012690, avgKrw:114_315_000 },
-];
-const TOTAL_QTY  = HOLDINGS.reduce((s,h)=>s+h.qty,0);
-const TOTAL_COST = HOLDINGS.reduce((s,h)=>s+h.qty*h.avgKrw,0);
+const TOTAL_QTY  = 0.03497359;
+const TOTAL_COST = 3_997_975;
+const HALF_QTY   = TOTAL_QTY / 2;
+const HALF_COST  = TOTAL_COST / 2;
+const AVG_KRW    = TOTAL_COST / TOTAL_QTY; // 가중평균 평단가
+
 let curKrw = null;
 
-const fk = n => '₩'+Math.round(n).toLocaleString('ko-KR');
-const fp = n => (n>=0?'+':'')+n.toFixed(2)+'%';
-const fsign = n => (n>=0?'+':'-')+fk(Math.abs(n));
+const fk    = n => '₩' + Math.round(n).toLocaleString('ko-KR');
+const fp    = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+const fsign = n => (n >= 0 ? '+' : '-') + fk(Math.abs(n));
 
 async function loadPrice() {
   const btn = document.getElementById('refreshBtn');
   btn.classList.add('spin');
-  document.getElementById('err').style.display='none';
+  document.getElementById('err').style.display = 'none';
   try {
-    const res  = await fetch('https://api.upbit.com/v1/ticker?markets=KRW-BTC');
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const [t]  = await res.json();
+    const res = await fetch('https://api.upbit.com/v1/ticker?markets=KRW-BTC');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const [t] = await res.json();
     curKrw = t.trade_price;
-    const chgPct = t.signed_change_rate*100;
+
+    const chgPct = t.signed_change_rate * 100;
     const chgAmt = t.signed_change_price;
 
     document.getElementById('priceKrw').textContent = fk(curKrw);
     const cb = document.getElementById('chgBadge');
     cb.textContent = fp(chgPct);
-    cb.className = 'badge '+(chgPct>0?'up':chgPct<0?'down':'neu');
+    cb.className = 'badge ' + (chgPct > 0 ? 'up' : chgPct < 0 ? 'down' : 'neu');
+
     const ca = document.getElementById('chgAmt');
-    ca.textContent = (chgAmt>=0?'▲ +':'▼ ')+fk(Math.abs(chgAmt))+' (전일 대비)';
-    ca.style.color = chgPct>0?'var(--green)':chgPct<0?'var(--red)':'var(--sub)';
+    ca.textContent = (chgAmt >= 0 ? '▲ +' : '▼ ') + fk(Math.abs(chgAmt)) + ' (전일 대비)';
+    ca.style.color = chgPct > 0 ? 'var(--green)' : chgPct < 0 ? 'var(--red)' : 'var(--sub)';
+
     document.getElementById('priceRow').innerHTML = `
       <div><div class="pc-stat-label">24H 고가</div><div class="pc-stat-val">${fk(t.high_price)}</div></div>
       <div><div class="pc-stat-label">24H 저가</div><div class="pc-stat-val">${fk(t.low_price)}</div></div>
-      <div><div class="pc-stat-label">거래대금</div><div class="pc-stat-val">${(t.acc_trade_price_24h/1e8).toFixed(0)}억</div></div>`;
+      <div><div class="pc-stat-label">평단가</div><div class="pc-stat-val">${fk(AVG_KRW)}</div></div>`;
+
     const now = new Date().toLocaleTimeString('ko-KR');
-    document.getElementById('updatedAt').textContent = now+' 업데이트';
+    document.getElementById('updatedAt').textContent = now + ' 업데이트';
     document.getElementById('liveTxt').textContent = '1분마다 자동 갱신 · 업비트';
+
     renderAll();
   } catch(e) {
-    const el=document.getElementById('err');
-    el.textContent='가격 로드 실패: '+e.message;
-    el.style.display='block';
-    document.getElementById('updatedAt').textContent='로드 실패';
+    const el = document.getElementById('err');
+    el.textContent = '가격 로드 실패: ' + e.message;
+    el.style.display = 'block';
+    document.getElementById('updatedAt').textContent = '로드 실패';
   }
   btn.classList.remove('spin');
 }
 
 function renderAll() {
-  if(!curKrw) return;
-  const evalTotal = TOTAL_QTY*curKrw;
-  const pnl = evalTotal-TOTAL_COST;
-  const pct = (pnl/TOTAL_COST)*100;
-  const pc = pnl>=0?'cg':'cr';
+  if (!curKrw) return;
+
+  // 전체
+  const evalTotal = TOTAL_QTY * curKrw;
+  const pnl       = evalTotal - TOTAL_COST;
+  const pct       = (pnl / TOTAL_COST) * 100;
+  const pc = pnl >= 0 ? 'cg' : 'cr';
   document.getElementById('sumEval').textContent = fk(evalTotal);
   document.getElementById('sumPnl').textContent  = fsign(pnl);
-  document.getElementById('sumPnl').className    = 'sc-val '+pc;
+  document.getElementById('sumPnl').className    = 'sc-val ' + pc;
   document.getElementById('sumPct').textContent  = fp(pct);
-  document.getElementById('sumPct').className    = 'sc-val '+pc;
-  document.getElementById('sumSub').textContent  = pnl>=0?'수익 중 🟢':'손실 중 🔴';
+  document.getElementById('sumPct').className    = 'sc-val ' + pc;
+  document.getElementById('sumSub').textContent  = pnl >= 0 ? '수익 중 🟢' : '손실 중 🔴';
 
-  document.getElementById('widgetList').innerHTML = HOLDINGS.map(h=>{
-    const evalV=h.qty*curKrw, costV=h.qty*h.avgKrw, pnlV=evalV-costV;
-    const pctV=(pnlV/costV)*100, cls=pnlV>=0?'profit':'loss', cc=pnlV>=0?'cg':'cr';
-    return `
-    <div class="widget ${cls}">
-      <div class="w-head">
-        <div><div class="w-name">${h.label}</div><div class="w-qty">${h.qty.toFixed(8)} 비트코인</div></div>
-        <div class="badge ${pnlV>=0?'up':'down'}">${fp(pctV)}</div>
-      </div>
-      <div class="w-grid">
-        <div class="w-stat"><div class="ws-label">평단가</div><div class="ws-val">${fk(h.avgKrw)}</div><div class="ws-sub">매수 기준가</div></div>
-        <div class="w-stat"><div class="ws-label">현재가</div><div class="ws-val ca">${fk(curKrw)}</div><div class="ws-sub">업비트 실시간</div></div>
-        <div class="w-stat"><div class="ws-label">평가액</div><div class="ws-val">${fk(evalV)}</div><div class="ws-sub">투자금 ${fk(costV)}</div></div>
-        <div class="w-stat"><div class="ws-label">수익금</div><div class="ws-val ${cc}">${fsign(pnlV)}</div><div class="ws-sub ${cc}">${fp(pctV)}</div></div>
-      </div>
-    </div>`;
-  }).join('');
+  // 50% 지분
+  const halfEval = HALF_QTY * curKrw;
+  const halfPnl  = halfEval - HALF_COST;
+  const halfPct  = (halfPnl / HALF_COST) * 100;
+  const hc = halfPnl >= 0 ? 'cg' : 'cr';
+  const hBadgeClass = 'badge ' + (halfPnl >= 0 ? 'up' : 'down');
+
+  // 예진
+  document.getElementById('yejinEval').textContent = fk(halfEval);
+  document.getElementById('yejinPnl').textContent  = fsign(halfPnl);
+  document.getElementById('yejinPnl').className    = 'ps-val ' + hc;
+  document.getElementById('yejinPct').textContent  = fp(halfPct);
+  document.getElementById('yejinPct').className    = 'ps-val ' + hc;
+  document.getElementById('yejinSub').textContent  = halfPnl >= 0 ? '수익 중' : '손실 중';
+  document.getElementById('yejinBadge').textContent = fp(halfPct);
+  document.getElementById('yejinBadge').className  = hBadgeClass;
+
+  // 제호
+  document.getElementById('yehoEval').textContent = fk(halfEval);
+  document.getElementById('yehoPnl').textContent  = fsign(halfPnl);
+  document.getElementById('yehoPnl').className    = 'ps-val ' + hc;
+  document.getElementById('yehoPct').textContent  = fp(halfPct);
+  document.getElementById('yehoPct').className    = 'ps-val ' + hc;
+  document.getElementById('yehoSub').textContent  = halfPnl >= 0 ? '수익 중' : '손실 중';
+  document.getElementById('yehoBadge').textContent = fp(halfPct);
+  document.getElementById('yehoBadge').className  = hBadgeClass;
 }
 
 loadPrice();
-setInterval(loadPrice,60000);
+setInterval(loadPrice, 60000);
 </script>
 </body>
 </html>

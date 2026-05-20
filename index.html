@@ -8,7 +8,7 @@
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
-    --bg:#f5f0e8;--card:#fffef9;--bg2:#f0ebe0;--border:#d4c9b0;
+    --bg:#e8e8e8;--card:#f5f5f5;--bg2:#e3e3e3;--border:#d4c9b0;
     --accent:#f7931a;--green:#2a9d5c;--red:#e84040;
     --text:#2a2010;--sub:#8a7a60;
     --mono:'Space Mono',monospace;--sans:'Noto Sans KR',sans-serif;
@@ -243,23 +243,23 @@ const SF = (fill) => `stroke="#2a2010" fill="${fill}" stroke-linecap="round" str
    가구 목록 — 나노바나나 이미지
    ══════════════════════════════════════════ */
 const FURNITURE = [
-  { emoji:'🍜', name:'컵라면',      key:'furni_ramen' },
-  { emoji:'🛏️', name:'이불',        key:'furni_blanket' },
-  { emoji:'🪴', name:'화분',        key:'furni_plant' },
-  { emoji:'📚', name:'책 선반',     key:'furni_shelf' },
-  { emoji:'📺', name:'TV',          key:'furni_tv' },
-  { emoji:'🛏️', name:'이불멈',      key:'furni_bed' },
-  { emoji:'📖', name:'책장',        key:'furni_bookcase' },
-  { emoji:'☕', name:'커피머신',    key:'furni_coffee' },
-  { emoji:'🛋️', name:'소파',        key:'furni_sofa' },
-  { emoji:'💻', name:'책상',        key:'furni_desk' },
-  { emoji:'❄️', name:'에어컨',      key:'furni_aircon' },
-  { emoji:'🐶', name:'강아지',      key:'furni_dog' },
-  { emoji:'🎹', name:'피아노',      key:'furni_piano' },
-  { emoji:'🐱', name:'고양이',      key:'furni_cat' },
-  { emoji:'🐠', name:'수족관',      key:'furni_aquarium' },
-  { emoji:'🎬', name:'홈시어터',    key:'furni_hometheater' },
-  { emoji:'💎', name:'샹들리에',    key:'furni_chandelier' },
+  { emoji:'🍜', name:'컵라면',    url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_ramen.png' },
+  { emoji:'🛏️', name:'이불',      url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_blanket.png' },
+  { emoji:'🪴', name:'화분',      url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_plant.png' },
+  { emoji:'📚', name:'책 선반',   url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_shelf.png' },
+  { emoji:'📺', name:'TV',        url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_tv.png' },
+  { emoji:'🛏️', name:'이불멈',    url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_bed.png' },
+  { emoji:'📖', name:'책장',      url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_bookcase.png' },
+  { emoji:'☕', name:'커피머신',  url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_coffee.png' },
+  { emoji:'🛋️', name:'소파',      url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_sofa.png' },
+  { emoji:'💻', name:'책상',      url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_desk.png' },
+  { emoji:'❄️', name:'에어컨',    url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_aircon.png' },
+  { emoji:'🐶', name:'강아지',    url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_dog.png' },
+  { emoji:'🎹', name:'피아노',    url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_piano.png' },
+  { emoji:'🐱', name:'고양이',    url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_cat.png' },
+  { emoji:'🐠', name:'수족관',    url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_aquarium.png' },
+  { emoji:'🎬', name:'홈시어터',  url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_hometheater.png' },
+  { emoji:'💎', name:'샹들리에',  url:'https://raw.githubusercontent.com/22billivilli-arch/zzbit/main/item_chandelier.png' },
 ];
 
 function getFurnitureCount(pnlWon) {
@@ -281,7 +281,7 @@ function getRoomBg(level) {
   const W=360, H=220;
   const floor = `<rect x="20" y="175" width="320" height="25" rx="3" ${SF('#f0ebe0')} stroke-width="2"/>
     <line x1="20" y1="175" x2="340" y2="175" stroke="#2a2010" stroke-width="2.5"/>`;
-  const wall  = `<rect x="20" y="20" width="320" height="158" rx="6" ${SF('#fffef9')} stroke-width="2.5"/>`;
+  const wall  = `<rect x="20" y="20" width="320" height="158" rx="6" ${SF('#e3e3e3')} stroke-width="2.5"/>`;
 
   if (level === 0) return `
     ${wall}
@@ -395,11 +395,28 @@ function getRoomBg(level) {
 /* ══ 이미지 가구 배치 ══ */
 function getFurnitureSvg(count) {
   if (!count) return '';
-  const slots=[[42,172],[318,172],[160,172],[200,172],[42,145],[318,145],[160,145],[200,145],[42,120],[318,120],[160,120],[200,120],[100,172],[260,172],[100,145]];
+  // 가구 슬롯: 캐릭터(x:90~270) 피하고 좌우 + 상단 배치
+  const slots=[
+    [42,172],  // 왼쪽 바닥1
+    [318,172], // 오른쪽 바닥1
+    [42,140],  // 왼쪽 중간1
+    [318,140], // 오른쪽 중간1
+    [42,108],  // 왼쪽 상단1
+    [318,108], // 오른쪽 상단1
+    [75,172],  // 왼쪽 바닥2
+    [285,172], // 오른쪽 바닥2
+    [75,140],  // 왼쪽 중간2
+    [285,140], // 오른쪽 중간2
+    [75,108],  // 왼쪽 상단2
+    [285,108], // 오른쪽 상단2
+    [180,55],  // 상단 중앙1 (TV 등)
+    [120,55],  // 상단 좌
+    [240,55],  // 상단 우
+  ];
   return FURNITURE.slice(0,count).map((item,i)=>{
     const [sx,sy]=slots[i%slots.length];
-    const imgSrc = ASSETS[item.key] || '';
-    const iw=70, ih=70;
+    const imgSrc = item.url || '';
+    const iw=58, ih=58;
     return `<image href="${imgSrc}" x="${sx-iw/2}" y="${sy-ih}" width="${iw}" height="${ih}"/>`;
   }).join('');
 }
@@ -456,10 +473,16 @@ function getChar(cx, cy, pct, isYejin, isWedding) {
 function getBubble(cx, by, pct) {
   const msgs=['😭 살려줘!!','😟 힘들다...','🙂 괜찮아요','😄 수익중~!','🎉 부자됐다!','🚀 달나라!'];
   const idx=pct>=20?5:pct>=10?4:pct>=3?3:pct>=0?2:pct>=-5?1:0;
+  const btop = by - 32;
   return `
-    <path d="M${cx-36} ${by-24} Q${cx-34} ${by-36} ${cx+34} ${by-36} Q${cx+36} ${by-24} ${cx+36} ${by-16} Q${cx+34} ${by-8} ${cx+6} ${by-8} L${cx+2} ${by} L${cx-4} ${by-8} Q${cx-34} ${by-8} ${cx-36} ${by-16} Z"
-      stroke="#2a2010" stroke-width="2" fill="white"/>
-    <text x="${cx}" y="${by-19}" font-size="11" text-anchor="middle" fill="#2a2010" font-family="sans-serif">${msgs[idx]}</text>`;
+    <rect x="${cx-44}" y="${btop}" width="88" height="24" rx="12"
+      fill="white" stroke="#2a2010" stroke-width="2"/>
+    <polygon points="${cx-6},${by-8} ${cx+6},${by-8} ${cx},${by}"
+      fill="white" stroke="#2a2010" stroke-width="2" stroke-linejoin="round"/>
+    <polygon points="${cx-5},${by-10} ${cx+5},${by-10} ${cx},${by-2}"
+      fill="white"/>
+    <text x="${cx}" y="${btop+17}" font-size="12" text-anchor="middle"
+      fill="#2a2010" font-family="sans-serif">${msgs[idx]}</text>`;
 }
 
 /* ══ 메인 씬 ══ */
@@ -484,12 +507,17 @@ function buildScene(pct, pnlWon) {
   const furniture = getFurnitureSvg(fCount);
 
   // 캐릭터 씬 이미지를 SVG 중앙 하단에 배치
+  // 캐릭터: 방 안 하단 중앙, 크기 줄여서 배치
+  const charW = 180, charH = 152;
+  const charX = (360 - charW) / 2;  // 중앙 정렬
+  const charY = 175 - charH;        // 바닥선에 발이 닿게
+
   const sceneImgSvg = sceneImg
-    ? `<image href="${sceneImg}" x="60" y="50" width="240" height="188" preserveAspectRatio="xMidYMax meet"/>`
+    ? `<image href="${sceneImg}" x="${charX}" y="${charY}" width="${charW}" height="${charH}" preserveAspectRatio="xMidYMax meet"/>`
     : '';
 
-  // 말풍선만 별도로
-  const bubble = getBubble(180, 22, pct);
+  // 말풍선 — 캐릭터 위에
+  const bubble = getBubble(180, charY - 4, pct);
 
   svg.innerHTML = roomBg + furniture + sceneImgSvg + bubble;
 }

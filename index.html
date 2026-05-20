@@ -139,6 +139,7 @@
 <div class="err" id="err"></div>
 
 <div class="viz-card" id="vizCard">
+  <div id="furnitureOverlay" style="position:absolute;inset:0;pointer-events:none;"></div>
   <svg id="roomSvg" class="room-scene" viewBox="0 0 360 220"
     xmlns="http://www.w3.org/2000/svg"
     style="stroke-linecap:round;stroke-linejoin:round"><defs><clipPath id="faceClip"><ellipse cx="40" cy="45" rx="38" ry="42"/></clipPath></defs></svg>
@@ -231,6 +232,7 @@ const HALF_QTY=JOINT_QTY/2,HALF_COST=JOINT_COST/2;
 const YEHO_EXTRA_QTY=0.01407929,YEHO_EXTRA_COST=1_370_950;
 const YEHO_TOTAL_QTY=HALF_QTY+YEHO_EXTRA_QTY,YEHO_TOTAL_COST=HALF_COST+YEHO_EXTRA_COST;
 let curKrw=null;
+let lastFCount=0;
 const fk=n=>'₩'+Math.round(n).toLocaleString('ko-KR');
 const fp=n=>(n>=0?'+':'')+n.toFixed(2)+'%';
 const fsign=n=>(n>=0?'+':'-')+fk(Math.abs(n));
@@ -395,30 +397,27 @@ function getRoomBg(level) {
 /* ══ 이미지 가구 배치 ══ */
 function getFurnitureSvg(count) {
   if (!count) return '';
+  // SVG viewBox(360x220) → 실제 px 비율 계산은 renderFurnitureOverlay에서
   // 가구 슬롯: 캐릭터(x:90~270) 피하고 좌우 + 상단 배치
   const slots=[
-    [42,172],  // 왼쪽 바닥1
-    [318,172], // 오른쪽 바닥1
-    [42,140],  // 왼쪽 중간1
-    [318,140], // 오른쪽 중간1
-    [42,108],  // 왼쪽 상단1
-    [318,108], // 오른쪽 상단1
-    [75,172],  // 왼쪽 바닥2
-    [285,172], // 오른쪽 바닥2
-    [75,140],  // 왼쪽 중간2
-    [285,140], // 오른쪽 중간2
-    [75,108],  // 왼쪽 상단2
-    [285,108], // 오른쪽 상단2
-    [180,55],  // 상단 중앙1 (TV 등)
-    [120,55],  // 상단 좌
-    [240,55],  // 상단 우
+    [68,170],  // 왼쪽 바닥1
+    [292,170], // 오른쪽 바닥1
+    [68,138],  // 왼쪽 중간1
+    [292,138], // 오른쪽 중간1
+    [68,108],  // 왼쪽 상단1
+    [292,108], // 오른쪽 상단1
+    [90,170],  // 왼쪽 바닥2
+    [270,170], // 오른쪽 바닥2
+    [90,138],  // 왼쪽 중간2
+    [270,138], // 오른쪽 중간2
+    [90,108],  // 왼쪽 상단2
+    [270,108], // 오른쪽 상단2
+    [180,80],  // 상단 중앙
+    [130,80],  // 상단 좌
+    [230,80],  // 상단 우
   ];
-  return FURNITURE.slice(0,count).map((item,i)=>{
-    const [sx,sy]=slots[i%slots.length];
-    const imgSrc = item.url || '';
-    const iw=58, ih=58;
-    return `<image href="${imgSrc}" x="${sx-iw/2}" y="${sy-ih}" width="${iw}" height="${ih}"/>`;
-  }).join('');
+  // HTML overlay에서 렌더 (renderFurnitureOverlay)
+  return ''; // SVG image 외부URL 차단 우회
 }
 
 /* ══ 이미지 캐릭터 ══ */
@@ -473,16 +472,53 @@ function getChar(cx, cy, pct, isYejin, isWedding) {
 function getBubble(cx, by, pct) {
   const msgs=['😭 살려줘!!','😟 힘들다...','🙂 괜찮아요','😄 수익중~!','🎉 부자됐다!','🚀 달나라!'];
   const idx=pct>=20?5:pct>=10?4:pct>=3?3:pct>=0?2:pct>=-5?1:0;
-  const btop = by - 32;
+  // by = 말풍선 꼬리 끝 y 위치
+  // 말풍선 박스는 by 위로
+  const bh = 26, bw = 100;
+  const btop = by - bh - 12;  // 박스 상단
+  const bbot = by - 10;        // 꼬리 시작
   return `
-    <rect x="${cx-44}" y="${btop}" width="88" height="24" rx="12"
+    <rect x="${cx - bw/2}" y="${btop}" width="${bw}" height="${bh}" rx="13"
       fill="white" stroke="#2a2010" stroke-width="2"/>
-    <polygon points="${cx-6},${by-8} ${cx+6},${by-8} ${cx},${by}"
-      fill="white" stroke="#2a2010" stroke-width="2" stroke-linejoin="round"/>
-    <polygon points="${cx-5},${by-10} ${cx+5},${by-10} ${cx},${by-2}"
+    <polygon points="${cx-7},${bbot} ${cx+7},${bbot} ${cx},${by-2}"
+      fill="white" stroke="#2a2010" stroke-width="1.5" stroke-linejoin="round"/>
+    <polygon points="${cx-6},${bbot+1} ${cx+6},${bbot+1} ${cx},${by-4}"
       fill="white"/>
-    <text x="${cx}" y="${btop+17}" font-size="12" text-anchor="middle"
+    <text x="${cx}" y="${btop + bh/2 + 5}" font-size="12" text-anchor="middle"
       fill="#2a2010" font-family="sans-serif">${msgs[idx]}</text>`;
+}
+
+/* ══ 가구 HTML 오버레이 (SVG image 외부URL 차단 우회) ══ */
+function renderFurnitureOverlay(count) {
+  const wrap = document.getElementById('furnitureOverlay');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  if (!count) return;
+
+  // SVG viewBox 360x220 → 실제 렌더 사이즈 비율
+  const svg = document.getElementById('roomSvg');
+  const rect = svg.getBoundingClientRect();
+  const scaleX = rect.width / 360;
+  const scaleY = rect.height / 220;
+
+  const slots=[
+    [68,170],[292,170],[68,138],[292,138],[68,108],[292,108],
+    [90,170],[270,170],[90,138],[270,138],[90,108],[270,108],
+    [180,80],[130,80],[230,80],
+  ];
+  const iw=58, ih=58;
+
+  FURNITURE.slice(0, count).forEach((item, i) => {
+    const [sx, sy] = slots[i % slots.length];
+    const x = (sx - iw/2) * scaleX;
+    const y = (sy - ih)   * scaleY;
+    const w = iw * scaleX;
+    const h = ih * scaleY;
+    const img = document.createElement('img');
+    img.src = item.url;
+    img.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;pointer-events:none;`;
+    wrap.appendChild(img);
+  });
 }
 
 /* ══ 메인 씬 ══ */
@@ -508,18 +544,20 @@ function buildScene(pct, pnlWon) {
 
   // 캐릭터 씬 이미지를 SVG 중앙 하단에 배치
   // 캐릭터: 방 안 하단 중앙, 크기 줄여서 배치
-  const charW = 180, charH = 152;
+  const charW = 170, charH = 140;
   const charX = (360 - charW) / 2;  // 중앙 정렬
-  const charY = 175 - charH;        // 바닥선에 발이 닿게
+  const charY = 175 - charH;        // 바닥선에 발이 닿게 (y=35)
 
   const sceneImgSvg = sceneImg
-    ? `<image href="${sceneImg}" x="${charX}" y="${charY}" width="${charW}" height="${charH}" preserveAspectRatio="xMidYMax meet"/>`
+    ? `<image href="${sceneImg}" x="${charX}" y="${charY}" width="${charW}" height="${charH}" preserveAspectRatio="xMidYMax meet" crossorigin="anonymous"/>`
     : '';
 
-  // 말풍선 — 캐릭터 위에
-  const bubble = getBubble(180, charY - 4, pct);
+  // 말풍선 — 꼬리가 캐릭터 머리 위 (y=charY+20 = 55 부근)
+  const bubble = getBubble(180, charY + 22, pct);
 
   svg.innerHTML = roomBg + furniture + sceneImgSvg + bubble;
+  // 가구 HTML 오버레이 업데이트
+  renderFurnitureOverlay(fCount);
 }
 
 /* ══ 아이템 로그 ══ */
@@ -589,6 +627,7 @@ function renderAll() {
   const pnlWon=Math.round(jointPnl);
   const fCount=getFurnitureCount(pnlWon);
 
+  lastFCount = fCount;
   buildScene(jointPct,pnlWon);
   updateItemLog(fCount,pnlWon);
   startCoinRain(jointPct>=20);
@@ -622,6 +661,9 @@ function renderAll() {
 
 loadPrice();
 setInterval(loadPrice,60000);
+window.addEventListener('resize', () => {
+  if (typeof lastFCount !== 'undefined') renderFurnitureOverlay(lastFCount);
+});
 </script>
 </body>
 </html>

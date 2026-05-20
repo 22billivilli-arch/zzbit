@@ -40,7 +40,7 @@
   .viz-card{background:var(--card);border:2.5px solid var(--text);border-radius:16px;
     margin-bottom:14px;overflow:hidden;box-shadow:4px 4px 0 var(--text);
     position:relative;z-index:1}
-  .room-scene{width:100%;display:block}
+  .room-scene{width:100%;display:block;vertical-align:bottom}
 
   /* 아이템 로그 */
   .item-log{padding:10px 14px;background:var(--bg2);border-top:2px solid var(--text);
@@ -140,7 +140,7 @@
 
 <div class="viz-card" id="vizCard">
   <div id="furnitureOverlay" style="position:absolute;inset:0;pointer-events:none;"></div>
-  <svg id="roomSvg" class="room-scene" viewBox="0 0 360 210"
+  <svg id="roomSvg" class="room-scene" viewBox="0 0 360 178"
     xmlns="http://www.w3.org/2000/svg"
     style="stroke-linecap:round;stroke-linejoin:round"><defs><clipPath id="faceClip"><ellipse cx="40" cy="45" rx="38" ry="42"/></clipPath></defs></svg>
   <div class="item-log" id="itemLog">

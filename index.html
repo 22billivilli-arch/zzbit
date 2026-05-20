@@ -581,10 +581,12 @@ function buildScene(pct, pnlWon) {
 function updateItemLog(count, pnlWon) {
   const log = document.getElementById('itemLog');
   if (!count) {
-    const msg = pnlWon<=0 ? '수익이 나면 가구가 하나씩 생겨요 ✏️'
+    const msg = pnlWon<=0 ? '수익이 나면 가구가 하나씩 생겨요 🛋️'
       : `₩${(10000-pnlWon%10000).toLocaleString()} 더 수익나면 첫 가구!`;
+    log.style.display = 'flex';
     log.innerHTML=`<span class="item-empty">${msg}</span>`; return;
   }
+  log.style.display = 'flex';
   const next = FURNITURE[count]?`<span class="item-empty" style="margin-left:auto;font-size:10px">다음: ${FURNITURE[count].emoji} +₩1만</span>`:'';
   log.innerHTML = FURNITURE.slice(0,count).map(f=>`<span class="item-tag">${f.emoji} ${f.name}</span>`).join('')+next;
 }

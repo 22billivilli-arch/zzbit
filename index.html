@@ -501,22 +501,55 @@ function renderFurnitureOverlay(count) {
   const scaleX = rect.width / 360;
   const scaleY = rect.height / 220;
 
-  const slots=[
-    [68,170],[292,170],[68,138],[292,138],[68,108],[292,108],
-    [90,170],[270,170],[90,138],[270,138],[90,108],[270,108],
-    [180,80],[130,80],[230,80],
+  // 이미지 배치 기준 (SVG 360x220, 캐릭터 x:95~265)
+  // [x중심, y바닥, 너비, 높이]
+  const itemLayout = [
+    // 1: 컵라면 — 왼쪽 바닥 작게
+    { x: 52,  y: 185, w: 38, h: 38 },
+    // 2: 이불 — 오른쪽 중간
+    { x: 290, y: 158, w: 70, h: 55 },
+    // 3: 화분 — 오른쪽 바닥 작게
+    { x: 318, y: 185, w: 36, h: 40 },
+    // 4: 책장 — 왼쪽 상단
+    { x: 55,  y: 105, w: 68, h: 52 },
+    // 5: TV — 오른쪽 중하
+    { x: 308, y: 185, w: 52, h: 48 },
+    // 6: 침대 — 오른쪽 중간 (이불 뒤)
+    { x: 300, y: 168, w: 75, h: 60 },
+    // 7: 책장2 — 오른쪽 상단
+    { x: 305, y: 100, w: 65, h: 50 },
+    // 8: 커피머신 — 왼쪽 중하
+    { x: 52,  y: 162, w: 42, h: 44 },
+    // 9: 소파 — 중앙 하단
+    { x: 180, y: 192, w: 100, h: 72 },
+    // 10: 책상 — 왼쪽 중간
+    { x: 62,  y: 148, w: 72, h: 52 },
+    // 11: 에어컨 — 왼쪽 상단 벽
+    { x: 75,  y: 72,  w: 68, h: 38 },
+    // 12: 강아지 — 중앙 바닥
+    { x: 155, y: 190, w: 44, h: 44 },
+    // 13: 피아노 — 왼쪽 중간
+    { x: 65,  y: 130, w: 68, h: 52 },
+    // 14: 고양이 — 오른쪽 바닥
+    { x: 302, y: 190, w: 42, h: 42 },
+    // 15: 수족관 — 왼쪽 상단 책상위
+    { x: 68,  y: 88,  w: 52, h: 46 },
+    // 16: 홈시어터 — 중앙 중간
+    { x: 180, y: 138, w: 90, h: 60 },
+    // 17: 샹들리에 — 중앙 천장
+    { x: 180, y: 52,  w: 52, h: 46 },
   ];
-  const iw=58, ih=58;
+  const iw=58, ih=58; // fallback (안씀)
 
   FURNITURE.slice(0, count).forEach((item, i) => {
-    const [sx, sy] = slots[i % slots.length];
-    const x = (sx - iw/2) * scaleX;
-    const y = (sy - ih)   * scaleY;
-    const w = iw * scaleX;
-    const h = ih * scaleY;
+    const layout = itemLayout[i % itemLayout.length];
+    const x = (layout.x - layout.w/2) * scaleX;
+    const y = (layout.y - layout.h)   * scaleY;
+    const w = layout.w * scaleX;
+    const h = layout.h * scaleY;
     const img = document.createElement('img');
     img.src = item.url;
-    img.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;pointer-events:none;`;
+    img.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;pointer-events:none;object-fit:contain;`;
     wrap.appendChild(img);
   });
 }

@@ -52,7 +52,7 @@
 
   /* 배너 */
   .pnl-banner{padding:16px 18px;display:flex;align-items:center;
-    justify-content:space-between;background:var(--card);border-top:2px solid var(--text)}
+    justify-content:space-between;background:var(--card);border-top:2px solid var(--border)}
   .pnl-label{font-size:10px;letter-spacing:1.5px;color:var(--sub);margin-bottom:5px;text-transform:uppercase;font-family:var(--mono)}
   .pnl-big{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:-1px;line-height:1}
   .pnl-pct{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1}
@@ -140,7 +140,7 @@
 
 <div class="viz-card" id="vizCard">
   <div id="furnitureOverlay" style="position:absolute;inset:0;pointer-events:none;"></div>
-  <svg id="roomSvg" class="room-scene" viewBox="0 0 360 220"
+  <svg id="roomSvg" class="room-scene" viewBox="0 0 360 210"
     xmlns="http://www.w3.org/2000/svg"
     style="stroke-linecap:round;stroke-linejoin:round"><defs><clipPath id="faceClip"><ellipse cx="40" cy="45" rx="38" ry="42"/></clipPath></defs></svg>
   <div class="item-log" id="itemLog">
@@ -501,43 +501,27 @@ function renderFurnitureOverlay(count) {
   const scaleX = rect.width / 360;
   const scaleY = rect.height / 220;
 
-  // 이미지 배치 기준 (SVG 360x220, 캐릭터 x:95~265)
-  // [x중심, y바닥, 너비, 높이]
+  // 방 구역: 왼쪽(x:28~88), 오른쪽(x:272~332), 중앙상단(x:130~230)
+  // 캐릭터 영역(x:95~265) 침범 안 함
+  // 각 아이템 고정 위치 — 겹침 없음
   const itemLayout = [
-    // 1: 컵라면 — 왼쪽 바닥 작게
-    { x: 52,  y: 185, w: 38, h: 38 },
-    // 2: 이불 — 오른쪽 중간
-    { x: 290, y: 158, w: 70, h: 55 },
-    // 3: 화분 — 오른쪽 바닥 작게
-    { x: 318, y: 185, w: 36, h: 40 },
-    // 4: 책장 — 왼쪽 상단
-    { x: 55,  y: 105, w: 68, h: 52 },
-    // 5: TV — 오른쪽 중하
-    { x: 308, y: 185, w: 52, h: 48 },
-    // 6: 침대 — 오른쪽 중간 (이불 뒤)
-    { x: 300, y: 168, w: 75, h: 60 },
-    // 7: 책장2 — 오른쪽 상단
-    { x: 305, y: 100, w: 65, h: 50 },
-    // 8: 커피머신 — 왼쪽 중하
-    { x: 52,  y: 162, w: 42, h: 44 },
-    // 9: 소파 — 중앙 하단
-    { x: 180, y: 192, w: 100, h: 72 },
-    // 10: 책상 — 왼쪽 중간
-    { x: 62,  y: 148, w: 72, h: 52 },
-    // 11: 에어컨 — 왼쪽 상단 벽
-    { x: 75,  y: 72,  w: 68, h: 38 },
-    // 12: 강아지 — 중앙 바닥
-    { x: 155, y: 190, w: 44, h: 44 },
-    // 13: 피아노 — 왼쪽 중간
-    { x: 65,  y: 130, w: 68, h: 52 },
-    // 14: 고양이 — 오른쪽 바닥
-    { x: 302, y: 190, w: 42, h: 42 },
-    // 15: 수족관 — 왼쪽 상단 책상위
-    { x: 68,  y: 88,  w: 52, h: 46 },
-    // 16: 홈시어터 — 중앙 중간
-    { x: 180, y: 138, w: 90, h: 60 },
-    // 17: 샹들리에 — 중앙 천장
-    { x: 180, y: 52,  w: 52, h: 46 },
+    { x: 55,  y: 185, w: 36, h: 36 }, // 1: 컵라면  — 왼쪽 바닥 앞
+    { x: 55,  y: 148, w: 42, h: 42 }, // 2: 이불    — 왼쪽 중간
+    { x: 55,  y: 108, w: 44, h: 44 }, // 3: 화분    — 왼쪽 상단
+    { x: 310, y: 108, w: 44, h: 44 }, // 4: 책장    — 오른쪽 상단
+    { x: 310, y: 148, w: 44, h: 44 }, // 5: TV      — 오른쪽 중간
+    { x: 310, y: 185, w: 40, h: 40 }, // 6: 침대    — 오른쪽 바닥 앞
+    { x: 180, y: 68,  w: 44, h: 44 }, // 7: 책장2   — 중앙 상단
+    { x: 80,  y: 185, w: 36, h: 36 }, // 8: 커피머신— 왼쪽 바닥 뒤
+    { x: 285, y: 185, w: 36, h: 36 }, // 9: 소파    — 오른쪽 바닥 뒤
+    { x: 80,  y: 148, w: 42, h: 42 }, // 10: 책상   — 왼쪽 중간 뒤
+    { x: 285, y: 148, w: 42, h: 42 }, // 11: 에어컨 — 오른쪽 중간 뒤
+    { x: 80,  y: 108, w: 44, h: 44 }, // 12: 강아지 — 왼쪽 상단 뒤
+    { x: 285, y: 108, w: 44, h: 44 }, // 13: 피아노 — 오른쪽 상단 뒤
+    { x: 130, y: 68,  w: 44, h: 44 }, // 14: 고양이 — 중앙상단 왼
+    { x: 230, y: 68,  w: 44, h: 44 }, // 15: 수족관 — 중앙상단 오
+    { x: 180, y: 108, w: 44, h: 44 }, // 16: 홈시어터— 중앙 중간
+    { x: 180, y: 148, w: 44, h: 44 }, // 17: 샹들리에— 중앙 하단
   ];
   const iw=58, ih=58; // fallback (안씀)
 
@@ -668,7 +652,7 @@ function renderAll() {
   const pnlColor=jointPnl>=0?'var(--red)':'#1e40af';
   const banner=document.getElementById('pnlBanner');
   banner.style.background=jointPnl>=0?'#fff5f5':'#eff6ff';
-  banner.style.borderTop=jointPnl>=0?'2px solid #fca5a5':'2px solid #93c5fd';
+  banner.style.borderTop='2px solid var(--border)';
   document.getElementById('bigPnl').style.color=pnlColor;
   document.getElementById('bigPnl').textContent=fsign(jointPnl);
   document.getElementById('bigPct').style.color=pnlColor;

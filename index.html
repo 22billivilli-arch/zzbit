@@ -300,7 +300,7 @@
     <button onclick="lgSaveCard()" class="lg-savebtn">저장</button>
   </div>
 
-  <div class="sec-title">💸 이번달 용돈 (30만원)</div>
+  <div class="sec-title">💸 이번달 용돈 (300,870원)</div>
   <div class="lg-card">
     <div class="lg-balance">
       <div class="lg-bal-label">남은 용돈</div>
@@ -799,7 +799,7 @@ window.addEventListener('resize', () => {
   };
 
   // ── 제호 가계부 (데이터는 이 브라우저 localStorage에 저장) ──
-  var LG_ALLOWANCE = 300000; // 월 용돈 30만
+  var LG_ALLOWANCE = 300870; // 월 용돈
   var LG_FIXED = [
     {id:'life',      name:'생활비',    amt:1200000, rule:'always', note:'월세·공과금·연금·건보·관리비'},
     {id:'bizloan',   name:'사업자대출', amt:700000,  rule:'always'},
@@ -873,7 +873,7 @@ window.addEventListener('resize', () => {
     var remain = LG_ALLOWANCE - spent;
     var al = document.getElementById('lgAllow');
     al.textContent = won(remain); al.classList.toggle('neg', remain<0);
-    document.getElementById('lgAllowSpent').textContent = '30만 중 '+won(spent)+' 사용';
+    document.getElementById('lgAllowSpent').textContent = won(LG_ALLOWANCE)+' 중 '+won(spent)+' 사용';
     var sl = document.getElementById('lgSpList');
     sl.innerHTML = (sp.length ? sp.map(function(e,i){
       return '<div class="lg-inc"><span class="d">'+e.date.slice(5).replace('-','/')+' · '+escH(e.memo)+'</span>'

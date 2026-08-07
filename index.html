@@ -271,30 +271,47 @@
     <button onclick="lgMove(1)">›</button>
   </div>
   <div class="lg-card">
-    <div class="lg-row"><span>예산 수입</span><b id="lgBudget">450만원</b></div>
     <div class="lg-row"><span>고정지출 합계</span><b id="lgFixedSum" style="color:var(--red)">—</b></div>
+    <div class="lg-row"><span>신한카드</span><b id="lgShinhanV">₩0</b></div>
+    <div class="lg-row"><span>롯데카드</span><b id="lgLotteV">₩0</b></div>
     <div class="lg-balance">
-      <div class="lg-bal-label">잔액 (예산 450만 − 고정지출)</div>
-      <div class="lg-bal-big" id="lgBal">—</div>
-      <div class="lg-bal-sub" id="lgBalWon"></div>
+      <div class="lg-bal-label">이번달 총 나갈돈 (고정 + 신한 + 롯데)</div>
+      <div class="lg-bal-big" id="lgOut" style="color:var(--red)">—</div>
+      <div class="lg-bal-sub" id="lgOutWon"></div>
     </div>
-    <div class="lg-row small"><span>실제 수입 (일별 기록 합계)</span><span id="lgActInc">—</span></div>
-    <div class="lg-row small"><span>실질 잔액 (실수입 − 고정지출)</span><span id="lgActBal">—</span></div>
   </div>
 
-  <div class="sec-title">일별 수입 기록</div>
+  <div class="sec-title">💳 이번달 카드값 입력</div>
   <div class="lg-card">
     <div class="lg-inputrow">
-      <input type="date" id="lgIncDate">
-      <input type="number" id="lgIncAmt" placeholder="금액(원)" inputmode="numeric">
-      <input type="text" id="lgIncMemo" placeholder="메모(선택)">
-      <button onclick="lgAddInc()">추가</button>
+      <span style="min-width:40px;font-size:13px;color:var(--sub);align-self:center">신한</span>
+      <input type="number" id="lgShinhan" placeholder="신한카드 금액(원)" inputmode="numeric">
+      <button onclick="lgSaveCard()">저장</button>
     </div>
-    <div id="lgIncList"></div>
+    <div class="lg-inputrow" style="margin-top:6px">
+      <span style="min-width:40px;font-size:13px;color:var(--sub);align-self:center">롯데</span>
+      <input type="number" id="lgLotte" placeholder="롯데카드 금액(원)" inputmode="numeric">
+      <button onclick="lgSaveCard()">저장</button>
+    </div>
   </div>
 
-  <div class="sec-title">월 고정지출 · 납부 체크</div>
+  <div class="sec-title">📌 확정 월 고정지출 · 납부 체크</div>
   <div class="lg-card" id="lgFxList"></div>
+
+  <div class="sec-title">💸 이번달 용돈 (30만원)</div>
+  <div class="lg-card">
+    <div class="lg-balance">
+      <div class="lg-bal-label">남은 용돈</div>
+      <div class="lg-bal-big" id="lgAllow">—</div>
+      <div class="lg-bal-sub" id="lgAllowSpent"></div>
+    </div>
+    <div class="lg-inputrow">
+      <input type="text" id="lgSpMemo" placeholder="내용 (예: 점심)">
+      <input type="number" id="lgSpAmt" placeholder="금액(원)" inputmode="numeric">
+      <button onclick="lgAddSpend()">추가</button>
+    </div>
+    <div id="lgSpList"></div>
+  </div>
 </div>
 
 <script>
@@ -780,18 +797,16 @@ window.addEventListener('resize', () => {
   };
 
   // ── 제호 가계부 (데이터는 이 브라우저 localStorage에 저장) ──
-  var LG_BUDGET = 4500000; // 월 예산 수입 450만
+  var LG_ALLOWANCE = 300000; // 월 용돈 30만
   var LG_FIXED = [
-    {id:'life',      name:'생활비',       amt:1180000, rule:'always'},
-    {id:'bizloan',   name:'사업자대출',    amt:610000,  rule:'until',  until:'2026-12', note:'~26.12'},
-    {id:'shinhan',   name:'신한카드 할부',  amt:430000,  rule:'until',  until:'2027-04', note:'~27.04'},
-    {id:'coupang',   name:'쿠팡 할부',     amt:310000,  rule:'months', months:['2026-08','2026-09'], note:'8·9월만'},
-    {id:'biz',       name:'사업비',        amt:310000,  rule:'always'},
-    {id:'maint',     name:'관리비',        amt:260000,  rule:'always'},
-    {id:'fuel',      name:'주유비',        amt:250000,  rule:'always'},
-    {id:'pet',       name:'반려용품',      amt:300000,  rule:'always'},
-    {id:'hair',      name:'미용실',        amt:200000,  rule:'always'},
-    {id:'petsitter', name:'펫시터',        amt:210000,  rule:'always'}
+    {id:'life',      name:'생활비',    amt:1200000, rule:'always', note:'월세·공과금·연금·건보·관리비'},
+    {id:'bizloan',   name:'사업자대출', amt:700000,  rule:'always'},
+    {id:'samsung',   name:'삼성카드',   amt:500000,  rule:'until', until:'2026-10', note:'~10월'},
+    {id:'fuel',      name:'익산 주유',  amt:240000,  rule:'always'},
+    {id:'petsitter', name:'펫시터',    amt:157000,  rule:'always'},
+    {id:'petsupply', name:'반려용품',   amt:250000,  rule:'always'},
+    {id:'hair',      name:'헤어',      amt:100000,  rule:'always'},
+    {id:'biz',       name:'사업비',     amt:590000,  rule:'always', note:'창고·세무30+툴10+클로드코드19'}
   ];
   var _n = new Date();
   var lgYm = _n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0');
@@ -802,10 +817,12 @@ window.addEventListener('resize', () => {
   function activeFixed(){ return LG_FIXED.filter(function(e){ return isActive(e,lgYm); }); }
   function fixedSum(){ return activeFixed().reduce(function(s,e){ return s+e.amt; },0); }
   function k(t){ return 'zzbit_lg_'+t+'_'+lgYm; }
-  function loadInc(){ try{ return JSON.parse(localStorage.getItem(k('inc')))||[]; }catch(e){ return []; } }
-  function saveInc(a){ try{ localStorage.setItem(k('inc'), JSON.stringify(a)); }catch(e){} }
   function loadPaid(){ try{ return JSON.parse(localStorage.getItem(k('paid')))||{}; }catch(e){ return {}; } }
   function savePaid(o){ try{ localStorage.setItem(k('paid'), JSON.stringify(o)); }catch(e){} }
+  function loadCard(){ try{ return JSON.parse(localStorage.getItem(k('card')))||{}; }catch(e){ return {}; } }
+  function saveCardObj(o){ try{ localStorage.setItem(k('card'), JSON.stringify(o)); }catch(e){} }
+  function loadSpend(){ try{ return JSON.parse(localStorage.getItem(k('spend')))||[]; }catch(e){ return []; } }
+  function saveSpend(a){ try{ localStorage.setItem(k('spend'), JSON.stringify(a)); }catch(e){} }
   function escH(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
   window.lgMove = function(d){
@@ -813,18 +830,25 @@ window.addEventListener('resize', () => {
     lgYm = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
     lgRender();
   };
-  window.lgAddInc = function(){
-    var date = document.getElementById('lgIncDate').value || (lgYm+'-01');
-    var amt = parseInt((document.getElementById('lgIncAmt').value||'').replace(/[^0-9]/g,''),10);
+  window.lgSaveCard = function(){
+    var o = loadCard();
+    var s = parseInt((document.getElementById('lgShinhan').value||'').replace(/[^0-9]/g,''),10);
+    var l = parseInt((document.getElementById('lgLotte').value||'').replace(/[^0-9]/g,''),10);
+    o.shinhan = isNaN(s)?0:s; o.lotte = isNaN(l)?0:l;
+    saveCardObj(o); lgRender();
+  };
+  window.lgAddSpend = function(){
+    var memo = document.getElementById('lgSpMemo').value.trim();
+    var amt = parseInt((document.getElementById('lgSpAmt').value||'').replace(/[^0-9]/g,''),10);
     if(!amt){ alert('금액을 입력하세요'); return; }
-    var memo = document.getElementById('lgIncMemo').value.trim();
-    var a = loadInc(); a.push({date:date, amt:amt, memo:memo});
-    a.sort(function(x,y){ return x.date<y.date?-1:(x.date>y.date?1:0); });
-    saveInc(a);
-    document.getElementById('lgIncAmt').value=''; document.getElementById('lgIncMemo').value='';
+    if(!memo) memo='(내용없음)';
+    var t = new Date();
+    var date = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+    var a = loadSpend(); a.push({date:date, memo:memo, amt:amt}); saveSpend(a);
+    document.getElementById('lgSpMemo').value=''; document.getElementById('lgSpAmt').value='';
     lgRender();
   };
-  window.lgDelInc = function(i){ var a=loadInc(); a.splice(i,1); saveInc(a); lgRender(); };
+  window.lgDelSpend = function(i){ var a=loadSpend(); a.splice(i,1); saveSpend(a); lgRender(); };
   window.lgTogglePaid = function(id){ var o=loadPaid(); o[id]=!o[id]; savePaid(o); lgRender(); };
 
   window.lgRender = function(){
@@ -832,21 +856,15 @@ window.addEventListener('resize', () => {
     document.getElementById('lgMonth').textContent = p[0]+'년 '+(+p[1])+'월';
     var fx = activeFixed(), fsum = fixedSum(), paid = loadPaid();
     document.getElementById('lgFixedSum').textContent = man(fsum);
-    var bal = LG_BUDGET - fsum;
-    var balEl = document.getElementById('lgBal');
-    balEl.textContent = man(bal); balEl.classList.toggle('neg', bal<0);
-    document.getElementById('lgBalWon').textContent = won(bal);
-    var inc = loadInc(); var incSum = inc.reduce(function(s,e){ return s+e.amt; },0);
-    document.getElementById('lgActInc').textContent = won(incSum);
-    var actBal = incSum - fsum;
-    var ab = document.getElementById('lgActBal');
-    ab.textContent = won(actBal); ab.style.color = actBal<0?'var(--red)':'var(--green)';
-    var il = document.getElementById('lgIncList');
-    il.innerHTML = (inc.length ? inc.map(function(e,i){
-      return '<div class="lg-inc"><span class="d">'+e.date.slice(5).replace('-','/')+(e.memo?' · '+escH(e.memo):'')+'</span>'
-        + '<span><span class="a">'+won(e.amt)+'</span> <span class="x" onclick="lgDelInc('+i+')">✕</span></span></div>';
-    }).join('') : '<div class="lg-inc" style="border:none;color:var(--sub);font-size:12px">아직 기록이 없어요. 위에서 추가하세요.</div>')
-      + '<div class="lg-inc-total"><span>합계</span><span>'+won(incSum)+'</span></div>';
+    var card = loadCard(); var sh = card.shinhan||0, lt = card.lotte||0;
+    document.getElementById('lgShinhanV').textContent = won(sh);
+    document.getElementById('lgLotteV').textContent = won(lt);
+    var shIn=document.getElementById('lgShinhan'), ltIn=document.getElementById('lgLotte');
+    if(document.activeElement!==shIn) shIn.value = sh||'';
+    if(document.activeElement!==ltIn) ltIn.value = lt||'';
+    var out = fsum + sh + lt;
+    document.getElementById('lgOut').textContent = man(out);
+    document.getElementById('lgOutWon').textContent = won(out);
     var paidCnt = 0;
     var fl = document.getElementById('lgFxList');
     fl.innerHTML = fx.map(function(e){
@@ -858,8 +876,17 @@ window.addEventListener('resize', () => {
     }).join('');
     var unpaid = fx.filter(function(e){ return !paid[e.id]; }).reduce(function(s,e){ return s+e.amt; },0);
     fl.innerHTML += '<div class="lg-fx-foot"><span>납부 '+paidCnt+' / '+fx.length+'</span><span>미납 '+man(unpaid)+'</span></div>';
-    var di = document.getElementById('lgIncDate');
-    if(!di.value){ var t=new Date(); di.value = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); }
+    var sp = loadSpend(); var spent = sp.reduce(function(s,e){ return s+e.amt; },0);
+    var remain = LG_ALLOWANCE - spent;
+    var al = document.getElementById('lgAllow');
+    al.textContent = won(remain); al.classList.toggle('neg', remain<0);
+    document.getElementById('lgAllowSpent').textContent = '30만 중 '+won(spent)+' 사용';
+    var sl = document.getElementById('lgSpList');
+    sl.innerHTML = (sp.length ? sp.map(function(e,i){
+      return '<div class="lg-inc"><span class="d">'+e.date.slice(5).replace('-','/')+' · '+escH(e.memo)+'</span>'
+        + '<span><span class="a">'+won(e.amt)+'</span> <span class="x" onclick="lgDelSpend('+i+')">✕</span></span></div>';
+    }).join('') : '<div class="lg-inc" style="border:none;color:var(--sub);font-size:12px">아직 지출이 없어요. 내용·금액을 추가하세요.</div>')
+      + '<div class="lg-inc-total"><span>사용 합계</span><span>'+won(spent)+'</span></div>';
   };
 })();
 </script>

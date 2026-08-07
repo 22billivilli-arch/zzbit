@@ -161,6 +161,17 @@
   .lg-fx .am{font-family:var(--mono);font-weight:700;font-size:14px}
   .lg-fx.paid .nm{text-decoration:line-through;color:var(--sub)}
   .lg-fx-foot{display:flex;justify-content:space-between;padding-top:11px;margin-top:6px;border-top:2px solid var(--text);font-size:13px;font-family:var(--mono);font-weight:700}
+  .lg-inputrow input{box-sizing:border-box;min-width:0}
+  .lg-inputrow input#lgShinhan,.lg-inputrow input#lgLotte{flex:1 1 120px}
+  .lg-inputrow input#lgSpMemo{flex:2 1 110px}
+  .lg-inputrow input#lgSpAmt{flex:1 1 90px}
+  .lg-cardlbl{min-width:38px;font-size:13px;color:var(--sub);align-self:center;flex:0 0 auto}
+  .lg-savebtn{width:100%;background:var(--accent);color:#fff;border:2px solid var(--text);border-radius:8px;padding:11px;font-weight:700;cursor:pointer;box-shadow:2px 2px 0 var(--text);margin-top:2px}
+  .lg-savebtn:active{transform:translate(2px,2px);box-shadow:none}
+  .lg-fxrow{display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:8px 0;border-top:1.5px solid var(--border);font-size:14px}
+  .lg-fxrow:first-child{border-top:none}
+  .lg-fxrow small{color:var(--sub);font-size:11px;font-family:var(--mono)}
+  .lg-fxrow .am{font-family:var(--mono);font-weight:700;flex:0 0 auto;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -271,7 +282,8 @@
     <button onclick="lgMove(1)">›</button>
   </div>
   <div class="lg-card">
-    <div class="lg-row"><span>고정지출 합계</span><b id="lgFixedSum" style="color:var(--red)">—</b></div>
+    <div class="lg-row" onclick="lgToggleFx()" style="cursor:pointer"><span>고정지출 합계 <small id="lgFxCaret" style="color:var(--sub);font-family:var(--mono)">▾</small></span><b id="lgFixedSum" style="color:var(--red)">—</b></div>
+    <div id="lgFxList" style="display:none;padding:2px 0"></div>
     <div class="lg-row"><span>신한카드</span><b id="lgShinhanV">₩0</b></div>
     <div class="lg-row"><span>롯데카드</span><b id="lgLotteV">₩0</b></div>
     <div class="lg-balance">
@@ -283,20 +295,10 @@
 
   <div class="sec-title">💳 이번달 카드값 입력</div>
   <div class="lg-card">
-    <div class="lg-inputrow">
-      <span style="min-width:40px;font-size:13px;color:var(--sub);align-self:center">신한</span>
-      <input type="number" id="lgShinhan" placeholder="신한카드 금액(원)" inputmode="numeric">
-      <button onclick="lgSaveCard()">저장</button>
-    </div>
-    <div class="lg-inputrow" style="margin-top:6px">
-      <span style="min-width:40px;font-size:13px;color:var(--sub);align-self:center">롯데</span>
-      <input type="number" id="lgLotte" placeholder="롯데카드 금액(원)" inputmode="numeric">
-      <button onclick="lgSaveCard()">저장</button>
-    </div>
+    <div class="lg-inputrow"><span class="lg-cardlbl">신한</span><input type="number" id="lgShinhan" placeholder="신한카드 금액(원)" inputmode="numeric"></div>
+    <div class="lg-inputrow"><span class="lg-cardlbl">롯데</span><input type="number" id="lgLotte" placeholder="롯데카드 금액(원)" inputmode="numeric"></div>
+    <button onclick="lgSaveCard()" class="lg-savebtn">저장</button>
   </div>
-
-  <div class="sec-title">📌 확정 월 고정지출 · 납부 체크</div>
-  <div class="lg-card" id="lgFxList"></div>
 
   <div class="sec-title">💸 이번달 용돈 (30만원)</div>
   <div class="lg-card">
@@ -817,8 +819,6 @@ window.addEventListener('resize', () => {
   function activeFixed(){ return LG_FIXED.filter(function(e){ return isActive(e,lgYm); }); }
   function fixedSum(){ return activeFixed().reduce(function(s,e){ return s+e.amt; },0); }
   function k(t){ return 'zzbit_lg_'+t+'_'+lgYm; }
-  function loadPaid(){ try{ return JSON.parse(localStorage.getItem(k('paid')))||{}; }catch(e){ return {}; } }
-  function savePaid(o){ try{ localStorage.setItem(k('paid'), JSON.stringify(o)); }catch(e){} }
   function loadCard(){ try{ return JSON.parse(localStorage.getItem(k('card')))||{}; }catch(e){ return {}; } }
   function saveCardObj(o){ try{ localStorage.setItem(k('card'), JSON.stringify(o)); }catch(e){} }
   function loadSpend(){ try{ return JSON.parse(localStorage.getItem(k('spend')))||[]; }catch(e){ return []; } }
@@ -849,12 +849,12 @@ window.addEventListener('resize', () => {
     lgRender();
   };
   window.lgDelSpend = function(i){ var a=loadSpend(); a.splice(i,1); saveSpend(a); lgRender(); };
-  window.lgTogglePaid = function(id){ var o=loadPaid(); o[id]=!o[id]; savePaid(o); lgRender(); };
+  window.lgToggleFx = function(){ var el=document.getElementById('lgFxList'), c=document.getElementById('lgFxCaret'); var show=el.style.display==='none'; el.style.display=show?'':'none'; if(c) c.textContent=show?'▴':'▾'; };
 
   window.lgRender = function(){
     var p = lgYm.split('-');
     document.getElementById('lgMonth').textContent = p[0]+'년 '+(+p[1])+'월';
-    var fx = activeFixed(), fsum = fixedSum(), paid = loadPaid();
+    var fx = activeFixed(), fsum = fixedSum();
     document.getElementById('lgFixedSum').textContent = man(fsum);
     var card = loadCard(); var sh = card.shinhan||0, lt = card.lotte||0;
     document.getElementById('lgShinhanV').textContent = won(sh);
@@ -865,17 +865,10 @@ window.addEventListener('resize', () => {
     var out = fsum + sh + lt;
     document.getElementById('lgOut').textContent = man(out);
     document.getElementById('lgOutWon').textContent = won(out);
-    var paidCnt = 0;
     var fl = document.getElementById('lgFxList');
     fl.innerHTML = fx.map(function(e){
-      var isP = !!paid[e.id]; if(isP) paidCnt++;
-      return '<label class="lg-fx'+(isP?' paid':'')+'">'
-        + '<input type="checkbox" '+(isP?'checked':'')+' onchange="lgTogglePaid(\''+e.id+'\')">'
-        + '<span class="nm">'+e.name+(e.note?' <small>'+e.note+'</small>':'')+'</span>'
-        + '<span class="am">'+man(e.amt)+'</span></label>';
+      return '<div class="lg-fxrow"><span>'+e.name+(e.note?' <small>'+e.note+'</small>':'')+'</span><span class="am">'+man(e.amt)+'</span></div>';
     }).join('');
-    var unpaid = fx.filter(function(e){ return !paid[e.id]; }).reduce(function(s,e){ return s+e.amt; },0);
-    fl.innerHTML += '<div class="lg-fx-foot"><span>납부 '+paidCnt+' / '+fx.length+'</span><span>미납 '+man(unpaid)+'</span></div>';
     var sp = loadSpend(); var spent = sp.reduce(function(s,e){ return s+e.amt; },0);
     var remain = LG_ALLOWANCE - spent;
     var al = document.getElementById('lgAllow');

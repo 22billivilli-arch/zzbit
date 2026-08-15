@@ -870,10 +870,14 @@ window.addEventListener('resize', () => {
       return '<div class="lg-fxrow"><span>'+e.name+(e.note?' <small>'+e.note+'</small>':'')+'</span><span class="am">'+man(e.amt)+'</span></div>';
     }).join('');
     var sp = loadSpend(); var spent = sp.reduce(function(s,e){ return s+e.amt; },0);
-    var remain = LG_ALLOWANCE - spent;
+    // 신한카드·롯데카드·생활비·대출은 사용합계엔 포함하되 남은용돈 계산에선 제외(용돈이 아닌 별도 지출)
+    var LG_ALLOW_EXCLUDE = ['신한카드','롯데카드','생활비','대출'];
+    var lgIsExcl = function(memo){ memo=String(memo||''); return LG_ALLOW_EXCLUDE.some(function(k){ return memo.indexOf(k)>=0; }); };
+    var spentAllow = sp.reduce(function(s,e){ return s + (lgIsExcl(e.memo) ? 0 : e.amt); },0);
+    var remain = LG_ALLOWANCE - spentAllow;
     var al = document.getElementById('lgAllow');
     al.textContent = won(remain); al.classList.toggle('neg', remain<0);
-    document.getElementById('lgAllowSpent').textContent = won(LG_ALLOWANCE)+' 중 '+won(spent)+' 사용';
+    document.getElementById('lgAllowSpent').textContent = won(LG_ALLOWANCE)+' 중 '+won(spentAllow)+' 사용';
     var sl = document.getElementById('lgSpList');
     sl.innerHTML = (sp.length ? sp.map(function(e,i){
       return '<div class="lg-inc"><span class="d">'+e.date.slice(5).replace('-','/')+' · '+escH(e.memo)+'</span>'

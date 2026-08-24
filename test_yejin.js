@@ -150,7 +150,7 @@ check('안내 떴다', alerts[alerts.length - 1], '금액을 입력하세요');
 console.log('\n⑬ 저장 형식');
 const saved = JSON.parse(store['zzbit_yj_tx']);
 check('키 이름', Object.keys(store)[0], 'zzbit_yj_tx');
-check('필드', Object.keys(saved[0]).sort().join(','), 'amt,cat,date,id,type');
+check('필드', Object.keys(saved[0]).sort().join(','), 'amt,cat,date,id,memo,type');
 
 console.log('\n⑭ 시작 잔액이 잔액에 반영된다');
 store['zzbit_yj_tx'] = '[]';
@@ -261,6 +261,54 @@ check('비우면 다시 안내 문구', $('yjSayText').textContent, '이번달 �
 W.yjSayOpen();
 W.yjSayClose();
 check('취소하면 모달만 닫힌다', $('yjSayModal').style.display, 'none');
+
+console.log('\n⑳ 내용(선택 입력)');
+store['zzbit_yj_tx'] = '[]';
+while ($('yjMonth').textContent !== '2026년 8월') W.yjMove($('yjMonth').textContent > '2026년 8월' ? -1 : 1);
+
+function addMemo(type, cat, amt, date, memo) {
+  W.yjSetType(type);
+  $('yjCat').value = cat;
+  $('yjDate').value = date;
+  $('yjAmt').value = String(amt);
+  $('yjMemo').value = memo === undefined ? '' : memo;
+  W.yjAdd();
+}
+
+addMemo('out', '용돈', 12000, '2026-08-10', '편의점');
+let rec = JSON.parse(store['zzbit_yj_tx'])[0];
+check('내용이 저장된다', rec.memo, '편의점');
+check('내역에 보인다', /· 편의점/.test($('yjList').innerHTML), true);
+check('금액도 그대로', rec.amt, 12000);
+
+addMemo('out', '용돈', 5000, '2026-08-11');
+rec = JSON.parse(store['zzbit_yj_tx'])[1];
+check('안 써도 저장된다', rec.memo, '');
+check('빈 내용은 점을 안 붙인다', ($('yjList').innerHTML.match(/·/g) || []).length, 1);
+
+check('추가 뒤 내용칸이 비워진다', $('yjMemo').value, '');
+
+addMemo('in', '급여', 100, '2026-08-12', '  앞뒤 공백  ');
+check('앞뒤 공백은 다듬는다', JSON.parse(store['zzbit_yj_tx'])[2].memo, '앞뒤 공백');
+
+addMemo('out', '생필품', 3000, '2026-08-13', '<b>굵게</b> & "따옴표"');
+const li = $('yjList').innerHTML;
+check('꺾쇠는 그대로 안 들어간다', /<b>굵게<\/b>/.test(li), false);
+check('글자로 바뀌어 보인다', /&lt;b&gt;굵게/.test(li), true);
+check('따옴표·앰퍼샌드도 처리', /&amp;/.test(li) && /&quot;/.test(li), true);
+
+check('내용은 잔액에 영향 없다', bal().k, SK - 3000 + 100);
+
+console.log('\n㉑ 내용칸이 생기기 전에 넣은 기록도 그대로 열린다');
+store['zzbit_yj_tx'] = JSON.stringify([
+  { id: 1, date: '2026-08-05', type: 'in',  cat: '급여', amt: 1000000 },   // memo 없음
+  { id: 2, date: '2026-08-06', type: 'out', cat: '용돈', amt: 7000 },
+]);
+W.yjRender();
+check('잔액이 계산된다', bal().k, SK + 1000000);
+check('토스도 계산된다', bal().t, ST - 7000);
+check('내역이 그려진다', ($('yjList').innerHTML.match(/lg-inc/g) || []).length >= 2, true);
+check('없는 내용 때문에 깨지지 않는다', /undefined/.test($('yjList').innerHTML), false);
 
 console.log(`\n${'='.repeat(46)}\n  통과 ${ok} · 실패 ${fail}`);
 process.exit(fail ? 1 : 0);

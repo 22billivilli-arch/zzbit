@@ -235,6 +235,7 @@
   .yj-tag.in{color:var(--yj-in);border-color:var(--yj-in)}
   .yj-tag.out{color:var(--yj-out);border-color:var(--yj-out)}
   .yj-tag.fix{color:var(--yj-fix);border-color:var(--yj-fix)}
+  .yj-memo{color:var(--text);font-family:var(--sans);font-size:12.5px}
   .yj-tag.mv{color:#0064ff;border-color:#0064ff}
   #yjCat,#yjDate{border:2px solid var(--text);border-radius:8px;padding:9px;font-size:13px;font-family:var(--sans);background:#fff;color:var(--text)}
   /* 달력 — 수입은 빨강(+), 지출은 파랑(−) */
@@ -460,9 +461,12 @@
       <button id="yjSegOut" onclick="yjSetType('out')">− 지출</button>
     </div>
     <div class="lg-inputrow">
-      <input type="date" id="yjDate" style="flex:1 1 130px">
-      <select id="yjCat" style="flex:1 1 120px" onchange="yjHintNow()"></select>
-      <input type="number" id="yjAmt" placeholder="금액(원)" inputmode="numeric" style="flex:1 1 110px">
+      <input type="date" id="yjDate" style="flex:1 1 132px">
+      <select id="yjCat" style="flex:1 1 116px" onchange="yjHintNow()"></select>
+    </div>
+    <div class="lg-inputrow">
+      <input type="number" id="yjAmt" placeholder="금액(원)" inputmode="numeric" style="flex:1 1 108px">
+      <input type="text" id="yjMemo" placeholder="내용 (안 써도 돼요)" maxlength="30" style="flex:2 1 140px">
       <button onclick="yjAdd()">추가</button>
     </div>
     <div class="yj-hint" id="yjRuleHint"></div>
@@ -1196,12 +1200,14 @@ window.addEventListener('resize', () => {
     var date = document.getElementById('yjDate').value || yjToday();
     var cat  = document.getElementById('yjCat').value;
     var amtE = document.getElementById('yjAmt');
+    var memoE = document.getElementById('yjMemo');
     var amt  = parseInt((amtE.value||'').replace(/[^0-9]/g,''),10);
     if(!amt){ alert('금액을 입력하세요'); return; }
     var a = yjLoad();
-    a.push({id:yjNewId(), date:date, type:yjType, cat:cat, amt:amt});
+    a.push({id:yjNewId(), date:date, type:yjType, cat:cat, amt:amt,
+            memo:(memoE.value||'').trim()});     // 내용은 안 써도 된다
     yjSave(a);
-    amtE.value='';
+    amtE.value=''; memoE.value='';
     yjYm = date.slice(0,7);            // 넣은 달로 옮겨 바로 보이게
     yjRender();
   };
@@ -1367,7 +1373,10 @@ window.addEventListener('resize', () => {
              nm = x.cat + (isAllow ? ' <small style="color:#0064ff">토스</small>'
                                    : ' <small style="color:#3b5bdb">케뱅</small>');
              sign='−'; col = isAllow ? 'var(--yj-out)' : 'var(--yj-fix)'; }
-      return '<div class="lg-inc"><span class="d">'+x.date.slice(5).replace('-','/')+' '+tag+nm+'</span>'
+      // 내용은 사람이 직접 쓴 글이라 그대로 넣으면 안 된다. 반드시 escH 를 거친다.
+      var memo = (x.memo||'').trim();
+      var memoHtml = memo ? ' <span class="yj-memo">· '+escH(memo)+'</span>' : '';
+      return '<div class="lg-inc"><span class="d">'+x.date.slice(5).replace('-','/')+' '+tag+nm+memoHtml+'</span>'
         + '<span><span class="a" style="color:'+col+'">'+sign+won(x.amt)+'</span> '
         + '<span class="x" onclick="yjDel('+x.id+')">✕</span></span></div>';
     }).join('') : '<div class="lg-inc" style="border:none;color:var(--sub);font-size:12px">이 달에는 기록이 없어요.</div>');

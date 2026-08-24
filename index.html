@@ -153,6 +153,35 @@
   .lg-inc .a{font-family:var(--mono);font-weight:700}
   .lg-inc .x{color:var(--red);cursor:pointer;font-weight:700;padding:0 5px}
   .lg-inc-total{display:flex;justify-content:space-between;padding-top:9px;margin-top:4px;border-top:2px solid var(--text);font-weight:700;font-size:14px;font-family:var(--mono)}
+  /* ── 예진 가계부 ── */
+  .yj{--yj:#7c3aed}
+  .tabbar button.on.yj-on{background:var(--yj)}
+  .yj-banks{display:flex;gap:8px;margin-bottom:10px}
+  .yj-bank{flex:1;background:var(--bg2);border:2.5px solid var(--text);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:3px 3px 0 var(--text)}
+  .yj-bank .nm{font-size:11px;letter-spacing:.5px;color:var(--sub);margin-bottom:4px;font-weight:700}
+  .yj-bank .bal{font-size:19px;font-weight:700;font-family:var(--mono);word-break:break-all}
+  .yj-bank .bal.neg{color:var(--red)}
+  .yj-bank.k{border-color:#3b5bdb}
+  .yj-bank.k .nm{color:#3b5bdb}
+  .yj-bank.t{border-color:#0064ff}
+  .yj-bank.t .nm{color:#0064ff}
+  .yj-arrow{display:flex;align-items:center;font-family:var(--mono);color:var(--sub);font-size:18px;flex:0 0 auto}
+  .yj-seg{display:flex;gap:6px;margin-bottom:8px}
+  .yj-seg button{flex:1;background:var(--card);border:2px solid var(--text);border-radius:8px;padding:9px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--sans);color:var(--text);box-shadow:2px 2px 0 var(--text)}
+  .yj-seg button.on{background:var(--green);color:#fff}
+  .yj-seg button.on.out{background:var(--red)}
+  .yj-seg button:active{transform:translate(2px,2px);box-shadow:none}
+  .yj-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .yj-sum .c{background:var(--bg2);border:2px solid var(--text);border-radius:10px;padding:10px}
+  .yj-sum .c .l{font-size:11px;color:var(--sub);margin-bottom:3px}
+  .yj-sum .c .v{font-size:16px;font-weight:700;font-family:var(--mono)}
+  .yj-sum .c.wide{grid-column:1/-1}
+  .yj-hint{font-size:11px;color:var(--sub);line-height:1.6;margin-top:8px}
+  .yj-tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:5px;border:1.5px solid var(--border);margin-right:5px;font-weight:700}
+  .yj-tag.in{color:var(--green);border-color:var(--green)}
+  .yj-tag.out{color:var(--red);border-color:var(--red)}
+  .yj-tag.mv{color:#0064ff;border-color:#0064ff}
+  #yjCat,#yjDate{border:2px solid var(--text);border-radius:8px;padding:9px;font-size:13px;font-family:var(--sans);background:#fff;color:var(--text)}
   .lg-fx{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1.5px solid var(--border);cursor:pointer}
   .lg-fx:first-child{border-top:none}
   .lg-fx input[type=checkbox]{width:21px;height:21px;accent-color:var(--green);flex:0 0 auto}
@@ -196,6 +225,7 @@
 <div class="tabbar">
   <button id="tabbtn-asset" class="on" onclick="zzTab('asset')">₿ 자산</button>
   <button id="tabbtn-ledger" onclick="zzTab('ledger')">📒 제호 가계부</button>
+  <button id="tabbtn-yejin" onclick="zzTab('yejin')">💗 예진 가계부</button>
 </div>
 
 <div id="tab-asset">
@@ -313,6 +343,67 @@
       <button onclick="lgAddSpend()">추가</button>
     </div>
     <div id="lgSpList"></div>
+  </div>
+</div>
+
+<div id="tab-yejin" class="yj" style="display:none">
+  <div class="lg-monthbar">
+    <button onclick="yjMove(-1)">‹</button>
+    <div class="lg-month" id="yjMonth">—</div>
+    <button onclick="yjMove(1)">›</button>
+  </div>
+
+  <div class="sec-title">🏦 통장 잔액</div>
+  <div class="yj-banks">
+    <div class="yj-bank k">
+      <div class="nm">케이뱅크</div>
+      <div class="bal" id="yjKbank">₩0</div>
+    </div>
+    <div class="yj-arrow">→</div>
+    <div class="yj-bank t">
+      <div class="nm">토스뱅크</div>
+      <div class="bal" id="yjToss">₩0</div>
+    </div>
+  </div>
+  <div class="lg-card">
+    <div class="lg-row small"><span>케이뱅크에서 토스뱅크로 옮기기 (용돈 이체)</span></div>
+    <div class="lg-inputrow">
+      <input type="number" id="yjMoveAmt" placeholder="옮길 금액(원)" inputmode="numeric" style="flex:1 1 140px">
+      <button onclick="yjDoMove()" style="background:#0064ff">이동</button>
+    </div>
+    <div class="yj-hint">잔액은 전체 기간을 더한 값이에요. 달을 넘겨도 그대로 이어집니다.<br>
+      처음 쓰신다면 지금 통장에 있는 돈을 <b>수입 → 기타</b>로 한 번 넣어두세요.</div>
+  </div>
+
+  <div class="sec-title">✏️ 기록하기</div>
+  <div class="lg-card">
+    <div class="yj-seg">
+      <button id="yjSegIn" class="on" onclick="yjSetType('in')">＋ 수입</button>
+      <button id="yjSegOut" onclick="yjSetType('out')">− 지출</button>
+    </div>
+    <div class="lg-inputrow">
+      <input type="date" id="yjDate" style="flex:1 1 130px">
+      <select id="yjCat" style="flex:1 1 120px" onchange="yjHintNow()"></select>
+      <input type="number" id="yjAmt" placeholder="금액(원)" inputmode="numeric" style="flex:1 1 110px">
+      <button onclick="yjAdd()">추가</button>
+    </div>
+    <div class="yj-hint" id="yjRuleHint"></div>
+  </div>
+
+  <div class="sec-title">📊 이번달 합계</div>
+  <div class="lg-card">
+    <div class="yj-sum">
+      <div class="c"><div class="l">총수입</div><div class="v" id="yjSumIn" style="color:var(--green)">₩0</div></div>
+      <div class="c"><div class="l">용돈 지출</div><div class="v" id="yjSumAllow" style="color:var(--red)">₩0</div></div>
+      <div class="c"><div class="l">고정지출</div><div class="v" id="yjSumFixed" style="color:var(--red)">₩0</div></div>
+      <div class="c"><div class="l">지출 합계</div><div class="v" id="yjSumOut" style="color:var(--red)">₩0</div></div>
+      <div class="c wide"><div class="l">이번달 남은 돈 (수입 − 지출)</div><div class="v" id="yjSumNet">₩0</div></div>
+    </div>
+  </div>
+
+  <div class="sec-title">📋 이번달 내역</div>
+  <div class="lg-card">
+    <div id="yjList"></div>
   </div>
 </div>
 
@@ -793,9 +884,14 @@ window.addEventListener('resize', () => {
   window.zzTab = function(t){
     document.getElementById('tab-asset').style.display = (t==='asset')?'':'none';
     document.getElementById('tab-ledger').style.display = (t==='ledger')?'':'none';
+    document.getElementById('tab-yejin').style.display = (t==='yejin')?'':'none';
     document.getElementById('tabbtn-asset').classList.toggle('on', t==='asset');
     document.getElementById('tabbtn-ledger').classList.toggle('on', t==='ledger');
+    var yb = document.getElementById('tabbtn-yejin');
+    yb.classList.toggle('on', t==='yejin');
+    yb.classList.toggle('yj-on', t==='yejin');
     if(t==='ledger') lgRender();
+    if(t==='yejin') yjRender();
   };
 
   // ── 제호 가계부 (데이터는 이 브라우저 localStorage에 저장) ──
@@ -885,6 +981,160 @@ window.addEventListener('resize', () => {
     }).join('') : '<div class="lg-inc" style="border:none;color:var(--sub);font-size:12px">아직 지출이 없어요. 내용·금액을 추가하세요.</div>')
       + '<div class="lg-inc-total"><span>사용 합계</span><span>'+won(spent)+'</span></div>';
   };
+
+  // ── 예진 가계부 ────────────────────────────────────────────
+  // 돈의 흐름 규칙
+  //   수입          → 케이뱅크 +
+  //   지출 '용돈'    → 토스뱅크 −
+  //   지출 그 밖(고정) → 케이뱅크 −
+  //   이동          → 케이뱅크 −, 토스뱅크 +
+  // 잔액은 따로 저장하지 않고 기록 전체에서 매번 다시 계산한다.
+  // 기록을 지우거나 고쳐도 잔액이 저절로 맞고, 숫자가 어긋날 일이 없다.
+  var YJ_CAT = {
+    'in' : ['급여','용돈','기타'],
+    'out': ['월세','공과금','휴대폰','속눈썹','생필품','강아지미용','용돈']
+  };
+  var YJ_ALLOW = '용돈';               // 지출에서 이것만 토스뱅크
+  var yjType = 'in';
+  var yjYm = lgYm;                     // 처음 열 때는 이번달
+
+  function yjKey(){ return 'zzbit_yj_tx'; }
+  function yjLoad(){ try{ return JSON.parse(localStorage.getItem(yjKey()))||[]; }catch(e){ return []; } }
+  function yjSave(a){ try{ localStorage.setItem(yjKey(), JSON.stringify(a)); }catch(e){} }
+  function yjIsFixed(t){ return t.type==='out' && t.cat!==YJ_ALLOW; }
+
+  // 통장 잔액 — 기간 구분 없이 전부 누적한다
+  function yjBalance(){
+    var k=0, t=0;
+    yjLoad().forEach(function(x){
+      if(x.type==='in')        k += x.amt;
+      else if(x.type==='move'){ k -= x.amt; t += x.amt; }
+      else if(x.type==='out'){ if(x.cat===YJ_ALLOW) t -= x.amt; else k -= x.amt; }
+    });
+    return {kbank:k, toss:t};
+  }
+
+  window.yjMove = function(d){
+    var p = yjYm.split('-'); var dt = new Date(+p[0], (+p[1]-1)+d, 1);
+    yjYm = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+    yjRender();
+  };
+
+  window.yjSetType = function(t){
+    yjType = t;
+    document.getElementById('yjSegIn').classList.toggle('on', t==='in');
+    document.getElementById('yjSegOut').classList.toggle('on', t==='out');
+    document.getElementById('yjSegOut').classList.toggle('out', t==='out');
+    yjFillCat();
+  };
+
+  function yjFillCat(){
+    var sel = document.getElementById('yjCat');
+    sel.innerHTML = YJ_CAT[yjType].map(function(c){ return '<option>'+c+'</option>'; }).join('');
+    yjHint();
+  }
+
+  function yjHint(){
+    var el = document.getElementById('yjRuleHint');
+    var cat = document.getElementById('yjCat').value;
+    if(yjType==='in'){
+      el.innerHTML = '수입은 <b style="color:#3b5bdb">케이뱅크</b>에 쌓입니다.';
+    } else if(cat===YJ_ALLOW){
+      el.innerHTML = '용돈 지출은 <b style="color:#0064ff">토스뱅크</b>에서 빠집니다.';
+    } else {
+      el.innerHTML = '고정지출은 <b style="color:#3b5bdb">케이뱅크</b>에서 빠집니다.';
+    }
+  }
+
+  window.yjDoMove = function(){
+    var el = document.getElementById('yjMoveAmt');
+    var amt = parseInt((el.value||'').replace(/[^0-9]/g,''),10);
+    if(!amt){ alert('옮길 금액을 입력하세요'); return; }
+    var b = yjBalance();
+    if(amt > b.kbank && !confirm('케이뱅크 잔액('+won(b.kbank)+')보다 많아요.\n그래도 옮길까요?')) return;
+    var a = yjLoad();
+    a.push({id:yjNewId(), date:yjToday(), type:"move", cat:"", amt:amt});
+    yjSave(a); el.value=''; yjRender();
+  };
+
+  function yjToday(){
+    var t=new Date();
+    return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  }
+
+  // 기록마다 겹치지 않는 번호를 매긴다.
+  // Date.now() 만 쓰면 같은 1000분의 1초에 들어간 기록끼리 번호가 같아지고,
+  // 하나를 지울 때 엉뚱한 기록까지 함께 지워진다.
+  var yjSeq = 0;
+  function yjNewId(){ return Date.now()*1000 + (yjSeq++ % 1000); }
+
+  window.yjAdd = function(){
+    var date = document.getElementById('yjDate').value || yjToday();
+    var cat  = document.getElementById('yjCat').value;
+    var amtE = document.getElementById('yjAmt');
+    var amt  = parseInt((amtE.value||'').replace(/[^0-9]/g,''),10);
+    if(!amt){ alert('금액을 입력하세요'); return; }
+    var a = yjLoad();
+    a.push({id:yjNewId(), date:date, type:yjType, cat:cat, amt:amt});
+    yjSave(a);
+    amtE.value='';
+    yjYm = date.slice(0,7);            // 넣은 달로 옮겨 바로 보이게
+    yjRender();
+  };
+
+  window.yjDel = function(id){
+    var a = yjLoad().filter(function(x){ return x.id!==id; });
+    yjSave(a); yjRender();
+  };
+
+  window.yjRender = function(){
+    var p = yjYm.split('-');
+    document.getElementById('yjMonth').textContent = p[0]+'년 '+(+p[1])+'월';
+
+    var b = yjBalance();
+    var kE = document.getElementById('yjKbank'), tE = document.getElementById('yjToss');
+    kE.textContent = won(b.kbank); kE.classList.toggle('neg', b.kbank<0);
+    tE.textContent = won(b.toss);  tE.classList.toggle('neg', b.toss<0);
+
+    var all = yjLoad();
+    var mon = all.filter(function(x){ return String(x.date).slice(0,7)===yjYm; });
+    var sIn = 0, sAllow = 0, sFixed = 0;
+    mon.forEach(function(x){
+      if(x.type==='in') sIn += x.amt;
+      else if(x.type==='out'){ if(x.cat===YJ_ALLOW) sAllow += x.amt; else sFixed += x.amt; }
+    });
+    var sOut = sAllow + sFixed, net = sIn - sOut;
+    document.getElementById('yjSumIn').textContent    = won(sIn);
+    document.getElementById('yjSumAllow').textContent = won(sAllow);
+    document.getElementById('yjSumFixed').textContent = won(sFixed);
+    document.getElementById('yjSumOut').textContent   = won(sOut);
+    var nE = document.getElementById('yjSumNet');
+    nE.textContent = won(net);
+    nE.style.color = net<0 ? 'var(--red)' : 'var(--green)';
+
+    var dE = document.getElementById('yjDate');
+    if(!dE.value) dE.value = yjToday();
+
+    var list = mon.slice().sort(function(x,y){
+      return x.date===y.date ? y.id-x.id : (x.date<y.date?1:-1);
+    });
+    document.getElementById('yjList').innerHTML = (list.length ? list.map(function(x){
+      var tag, nm, sign, col;
+      if(x.type==='move'){ tag='<span class="yj-tag mv">이동</span>'; nm='케이뱅크 → 토스뱅크'; sign=''; col='#0064ff'; }
+      else if(x.type==='in'){ tag='<span class="yj-tag in">수입</span>'; nm=x.cat; sign='+'; col='var(--green)'; }
+      else { tag='<span class="yj-tag out">지출</span>';
+             nm = x.cat + (x.cat===YJ_ALLOW ? ' <small style="color:#0064ff">토스</small>'
+                                            : ' <small style="color:#3b5bdb">케뱅</small>');
+             sign='−'; col='var(--red)'; }
+      return '<div class="lg-inc"><span class="d">'+x.date.slice(5).replace('-','/')+' '+tag+nm+'</span>'
+        + '<span><span class="a" style="color:'+col+'">'+sign+won(x.amt)+'</span> '
+        + '<span class="x" onclick="yjDel('+x.id+')">✕</span></span></div>';
+    }).join('') : '<div class="lg-inc" style="border:none;color:var(--sub);font-size:12px">이 달에는 기록이 없어요.</div>');
+  };
+
+  window.yjHintNow = function(){ yjHint(); };
+
+  yjSetType('in');
 })();
 </script>
 </body>

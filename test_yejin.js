@@ -12,7 +12,7 @@ if (!/yjBalance/.test(code)) { console.error('예진 가계부 코드를 못 찾
 function El(id) {
   return {
     id, textContent: '', value: '', innerHTML: '',
-    style: {}, options: [],
+    style: {}, options: [], focus() {}, blur() {},
     classList: { _s: new Set(),
       toggle(c, on) { on ? this._s.add(c) : this._s.delete(c); },
       add(c) { this._s.add(c); }, remove(c) { this._s.delete(c); },
@@ -157,7 +157,6 @@ store['zzbit_yj_tx'] = '[]';
 W.yjRender();
 check('기록 없으면 시작 잔액 그대로 (케뱅)', bal().k, SK);
 check('기록 없으면 시작 잔액 그대로 (토스)', bal().t, ST);
-check('시작 잔액 안내 문구 표시', /시작 잔액/.test($('yjStartNote').innerHTML), true);
 check('합계는 시작 잔액에 안 섞인다', num($('yjSumIn').textContent), 0);
 
 console.log('\n⑮ 달력');
@@ -180,13 +179,14 @@ check('칸 수가 7의 배수', cells.length % 7, 0);
 check('8월 날짜 31칸', cells.length - pads, 31);
 check('1일이 토요일 → 앞 빈칸 6개', (cal.split('<div class="yj-cd pad"></div>').length - 1) >= 6, true);
 check('1일 수입 +240만', /<span class="n">1<\/span><span class="i">\+240만<\/span>/.test(cal), true);
-check('1일 지출 −65만', /1<\/span><span class="i">\+240만<\/span><span class="o">−65만<\/span>/.test(cal), true);
-check('15일 지출 −2.3만', /<span class="n">15<\/span><span class="o">−2\.3만<\/span>/.test(cal), true);
-check('31일 지출 −8.9만', /<span class="n">31<\/span><span class="o">−8\.9만<\/span>/.test(cal), true);
+check('1일 고정지출 −65만(초록)', /1<\/span><span class="i">\+240만<\/span><span class="f">−65만<\/span>/.test(cal), true);
+check('15일 용돈지출 −2.3만(파랑)', /<span class="n">15<\/span><span class="o">−2\.3만<\/span>/.test(cal), true);
+check('31일 고정지출 −8.9만(초록)', /<span class="n">31<\/span><span class="f">−8\.9만<\/span>/.test(cal), true);
 check('이동은 달력에 안 나온다 (20일 비어있음)', /<span class="n">20<\/span><\/div>/.test(cal), true);
 check('다음달 기록은 안 섞인다 (3일 비어있음)', /<span class="n">3<\/span><\/div>/.test(cal), true);
 check('수입은 빨강', /class="i"/.test(cal) && /--yj-in/.test(html), true);
-check('지출은 파랑', /class="o"/.test(cal) && /--yj-out/.test(html), true);
+check('용돈지출은 파랑', /class="o"/.test(cal) && /--yj-out/.test(html), true);
+check('고정지출은 초록', /class="f"/.test(cal) && /--yj-fix/.test(html), true);
 
 W.yjMove(1);
 const cal9 = $('yjCal').innerHTML;
@@ -197,6 +197,70 @@ check('9월엔 8월 기록 없음', !/240만/.test(cal9), true);
 
 W.yjMove(-1);
 check('8월로 되돌아옴', $('yjMonth').textContent, '2026년 8월');
+
+console.log('\n⑯ 화살표 이체 버튼');
+$('yjMoveBox').style.display = 'none';
+$('yjXferBtn').classList.remove('on');
+W.yjToggleMove();
+check('누르면 금액칸이 열린다', $('yjMoveBox').style.display, 'flex');
+check('버튼에 켜짐 표시', $('yjXferBtn').classList.contains('on'), true);
+W.yjToggleMove();
+check('다시 누르면 닫힌다', $('yjMoveBox').style.display, 'none');
+check('켜짐 표시도 꺼진다', $('yjXferBtn').classList.contains('on'), false);
+
+store['zzbit_yj_tx'] = '[]';
+W.yjRender();
+W.yjToggleMove();
+$('yjMoveAmt').value = '80000';
+W.yjDoMove();
+check('이체하면 케뱅에서 빠지고', bal().k, SK - 80000);
+check('토스로 들어온다', bal().t, ST + 80000);
+check('이체 뒤 금액칸이 닫힌다', $('yjMoveBox').style.display, 'none');
+check('금액칸이 비워진다', $('yjMoveAmt').value, '');
+
+console.log('\n⑰ 잔액은 무슨 일이 있어도 먼저 그려진다');
+const order = /window\.yjRender = function\(\)\{([\s\S]*?)yjDrawCal/.exec(html)[1];
+check('잔액 그리기가 합계·달력보다 앞', order.indexOf('yjKbank') < order.indexOf('yjSumIn'), true);
+
+console.log('\n⑱ 이번달 한마디');
+Object.keys(store).forEach(k => { if (/_say_/.test(k)) delete store[k]; });
+store['zzbit_yj_tx'] = '[]';
+while ($('yjMonth').textContent !== '2026년 8월') W.yjMove($('yjMonth').textContent > '2026년 8월' ? -1 : 1);
+
+check('처음엔 안내 문구', $('yjSayText').textContent, '이번달 한마디를 적어보세요');
+check('빈 상태 표시', $('yjSayText').classList.contains('empty'), true);
+
+W.yjSayOpen();
+check('수정 누르면 모달이 열린다', $('yjSayModal').style.display, 'flex');
+check('제목에 이번달', $('yjSayModalTitle').textContent, '8월 한마디');
+check('표정 6개가 그려진다', ($('yjSayFaces').innerHTML.match(/<button/g) || []).length, 6);
+
+$('yjSayInput').value = '이번달은 아껴쓰자!';
+W.yjSayCount();
+check('글자수 표시', $('yjSayCount').textContent, '10 / 60');
+W.yjSayFace(4);                       // sweat = 힘듦
+W.yjSaySave();
+check('저장하면 모달이 닫힌다', $('yjSayModal').style.display, 'none');
+check('말풍선에 적힌다', $('yjSayText').textContent, '이번달은 아껴쓰자!');
+check('빈 상태 아님', $('yjSayText').classList.contains('empty'), false);
+check('고른 표정이 저장된다', JSON.parse(store['zzbit_yj_say_2026-08']).face, 'sweat');
+
+console.log('\n⑲ 달이 바뀌면 한마디는 저절로 비워진다');
+W.yjMove(1);
+check('9월엔 다시 안내 문구', $('yjSayText').textContent, '이번달 한마디를 적어보세요');
+check('9월은 빈 상태', $('yjSayText').classList.contains('empty'), true);
+W.yjMove(-1);
+check('8월로 돌아오면 그대로 있다', $('yjSayText').textContent, '이번달은 아껴쓰자!');
+check('달마다 따로 저장된다', Object.keys(store).filter(k => /_say_/.test(k)).length, 1);
+
+W.yjSayOpen();
+$('yjSayInput').value = '';
+W.yjSaySave();
+check('비우면 다시 안내 문구', $('yjSayText').textContent, '이번달 한마디를 적어보세요');
+
+W.yjSayOpen();
+W.yjSayClose();
+check('취소하면 모달만 닫힌다', $('yjSayModal').style.display, 'none');
 
 console.log(`\n${'='.repeat(46)}\n  통과 ${ok} · 실패 ${fail}`);
 process.exit(fail ? 1 : 0);

@@ -372,7 +372,7 @@
       <button onclick="yjDoMove()" style="background:#0064ff">이동</button>
     </div>
     <div class="yj-hint">잔액은 전체 기간을 더한 값이에요. 달을 넘겨도 그대로 이어집니다.<br>
-      처음 쓰신다면 지금 통장에 있는 돈을 <b>수입 → 기타</b>로 한 번 넣어두세요.</div>
+      <span id="yjStartNote"></span></div>
   </div>
 
   <div class="sec-title">✏️ 기록하기</div>
@@ -995,6 +995,9 @@ window.addEventListener('resize', () => {
     'out': ['월세','공과금','휴대폰','속눈썹','생필품','강아지미용','용돈']
   };
   var YJ_ALLOW = '용돈';               // 지출에서 이것만 토스뱅크
+  // 가계부를 쓰기 전부터 통장에 있던 돈. 여기서 시작해 기록만큼 더하고 뺀다.
+  var YJ_START_KBANK = 502113;
+  var YJ_START_TOSS  = 12035;
   var yjType = 'in';
   var yjYm = lgYm;                     // 처음 열 때는 이번달
 
@@ -1005,7 +1008,7 @@ window.addEventListener('resize', () => {
 
   // 통장 잔액 — 기간 구분 없이 전부 누적한다
   function yjBalance(){
-    var k=0, t=0;
+    var k=YJ_START_KBANK, t=YJ_START_TOSS;
     yjLoad().forEach(function(x){
       if(x.type==='in')        k += x.amt;
       else if(x.type==='move'){ k -= x.amt; t += x.amt; }
@@ -1090,6 +1093,9 @@ window.addEventListener('resize', () => {
   window.yjRender = function(){
     var p = yjYm.split('-');
     document.getElementById('yjMonth').textContent = p[0]+'년 '+(+p[1])+'월';
+
+    document.getElementById('yjStartNote').innerHTML =
+      '시작 잔액 <b>케이뱅크 '+won(YJ_START_KBANK)+' · 토스뱅크 '+won(YJ_START_TOSS)+'</b> 에서 시작합니다.';
 
     var b = yjBalance();
     var kE = document.getElementById('yjKbank'), tE = document.getElementById('yjToss');

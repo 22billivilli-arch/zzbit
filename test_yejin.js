@@ -53,6 +53,12 @@ function check(label, got, want) {
   console.log(`  ${good ? 'OK  ' : '실패'} ${label}: ${got}${good ? '' : `  (기대 ${want})`}`);
   good ? ok++ : fail++;
 }
+// 시작 잔액은 코드에서 직접 읽는다. 값이 바뀌어도 검사가 따라간다.
+const SK = +(/YJ_START_KBANK\s*=\s*(\d+)/.exec(code) || [0,0])[1];
+const ST = +(/YJ_START_TOSS\s*=\s*(\d+)/.exec(code) || [0,0])[1];
+console.log(`  (시작 잔액 — 케이뱅크 ${SK.toLocaleString()} · 토스뱅크 ${ST.toLocaleString()})
+`);
+
 const $ = id => document.getElementById(id);   // els 는 호출돼야 생기므로 항상 이걸로 집는다
 const bal = () => ({ k: num($('yjKbank').textContent), t: num($('yjToss').textContent) });
 
@@ -68,33 +74,33 @@ function move(amt) { $('yjMoveAmt').value = String(amt); W.yjDoMove(); }
 // ── 검사 ────────────────────────────────────────────────────
 console.log('① 처음 상태');
 W.yjRender();
-check('케이뱅크', bal().k, 0);
-check('토스뱅크', bal().t, 0);
+check('케이뱅크', bal().k, SK);
+check('토스뱅크', bal().t, ST);
 
 console.log('\n② 수입 200만 → 케이뱅크에 쌓인다');
 add('in', '급여', 2000000, '2026-08-10');
-check('케이뱅크', bal().k, 2000000);
-check('토스뱅크', bal().t, 0);
+check('케이뱅크', bal().k, SK+2000000);
+check('토스뱅크', bal().t, ST);
 
 console.log('\n③ 고정지출(월세 60만) → 케이뱅크에서 빠진다');
 add('out', '월세', 600000, '2026-08-10');
-check('케이뱅크', bal().k, 1400000);
-check('토스뱅크', bal().t, 0);
+check('케이뱅크', bal().k, SK+1400000);
+check('토스뱅크', bal().t, ST);
 
 console.log('\n④ 이동 50만 → 케뱅 −, 토스 +');
 move(500000);
-check('케이뱅크', bal().k, 900000);
-check('토스뱅크', bal().t, 500000);
+check('케이뱅크', bal().k, SK+900000);
+check('토스뱅크', bal().t, ST+500000);
 
 console.log('\n⑤ 용돈 지출 3만 → 토스뱅크에서만 빠진다');
 add('out', '용돈', 30000, '2026-08-10');
-check('케이뱅크', bal().k, 900000);
-check('토스뱅크', bal().t, 470000);
+check('케이뱅크', bal().k, SK+900000);
+check('토스뱅크', bal().t, ST+470000);
 
 console.log('\n⑥ 수입 카테고리 용돈은 지출이 아니라 수입 → 케이뱅크 +');
 add('in', '용돈', 100000, '2026-08-11');
-check('케이뱅크', bal().k, 1000000);
-check('토스뱅크', bal().t, 470000);
+check('케이뱅크', bal().k, SK+1000000);
+check('토스뱅크', bal().t, ST+470000);
 
 console.log('\n⑦ 이번달 합계');
 check('총수입', num($('yjSumIn').textContent), 2100000);
@@ -107,7 +113,7 @@ console.log('\n⑧ 다른 달 — 합계는 0, 잔액은 이어진다');
 W.yjMove(1);
 check('9월 총수입', num($('yjSumIn').textContent), 0);
 check('9월 지출합계', num($('yjSumOut').textContent), 0);
-check('9월에도 케이뱅크 유지', bal().k, 1000000);
+check('9월에도 케이뱅크 유지', bal().k, SK+1000000);
 W.yjMove(-1);
 check('8월 총수입 복귀', num($('yjSumIn').textContent), 2100000);
 
@@ -115,7 +121,7 @@ console.log('\n⑨ 지난달 기록은 이번달 합계에 안 섞인다');
 add('out', '공과금', 77000, '2026-07-15');
 check('7월로 이동됨', $('yjMonth').textContent, '2026년 7월');
 check('7월 고정지출', num($('yjSumFixed').textContent), 77000);
-check('케이뱅크 반영', bal().k, 923000);
+check('케이뱅크 반영', bal().k, SK+923000);
 W.yjMove(1);
 check('8월 고정지출 그대로', num($('yjSumFixed').textContent), 600000);
 
@@ -145,6 +151,14 @@ console.log('\n⑬ 저장 형식');
 const saved = JSON.parse(store['zzbit_yj_tx']);
 check('키 이름', Object.keys(store)[0], 'zzbit_yj_tx');
 check('필드', Object.keys(saved[0]).sort().join(','), 'amt,cat,date,id,type');
+
+console.log('\n⑭ 시작 잔액이 잔액에 반영된다');
+store['zzbit_yj_tx'] = '[]';
+W.yjRender();
+check('기록 없으면 시작 잔액 그대로 (케뱅)', bal().k, SK);
+check('기록 없으면 시작 잔액 그대로 (토스)', bal().t, ST);
+check('시작 잔액 안내 문구 표시', /시작 잔액/.test($('yjStartNote').innerHTML), true);
+check('합계는 시작 잔액에 안 섞인다', num($('yjSumIn').textContent), 0);
 
 console.log(`\n${'='.repeat(46)}\n  통과 ${ok} · 실패 ${fail}`);
 process.exit(fail ? 1 : 0);

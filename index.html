@@ -175,12 +175,13 @@
   .yj-xfer:active{transform:translate(3px,3px);box-shadow:none}
   .yj-xfer.on{background:#0064ff;color:#fff}
   .yj-xfer.on .lb{color:#fff}
-  .yj-movebox{display:flex;gap:6px;margin-bottom:10px}
-  .yj-movebox input{flex:1;min-width:0;border:2.5px solid var(--text);border-radius:10px;padding:10px;
-    font-size:14px;font-family:var(--sans);background:#fff;color:var(--text)}
-  .yj-movebox button{flex:0 0 auto;background:#0064ff;color:#fff;border:2.5px solid var(--text);
-    border-radius:10px;padding:10px 18px;font-weight:700;cursor:pointer;box-shadow:3px 3px 0 var(--text);font-family:var(--sans)}
-  .yj-movebox button:active{transform:translate(3px,3px);box-shadow:none}
+  .yj-xfer-line{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;font-size:14px;font-weight:700}
+  .yj-xfer-line .from{color:#3b5bdb}
+  .yj-xfer-line .to{color:#0064ff}
+  .yj-xfer-line .ar{font-family:var(--mono);color:var(--sub)}
+  .yj-xfer-bal{text-align:center;font-size:12px;color:var(--sub);font-family:var(--mono);margin-bottom:12px}
+  #yjMoveAmt{width:100%;border:2.5px solid var(--text);border-radius:10px;padding:11px;
+    font-size:15px;font-family:var(--sans);background:#fff;color:var(--text);text-align:center}
   /* ── 이번달 한마디 ── */
   .yj-say{background:var(--card);border:2.5px solid var(--text);border-radius:14px;
     padding:14px 14px 10px;box-shadow:3px 3px 0 var(--text);margin-bottom:14px}
@@ -449,10 +450,6 @@
       <div class="bal" id="yjToss">₩0</div>
     </div>
   </div>
-  <div class="yj-movebox" id="yjMoveBox" style="display:none">
-    <input type="number" id="yjMoveAmt" placeholder="이체할 금액(원)" inputmode="numeric">
-    <button onclick="yjDoMove()">이체</button>
-  </div>
 
   <div class="sec-title">✏️ 기록하기</div>
   <div class="lg-card">
@@ -500,6 +497,26 @@
   <div class="sec-title">📋 이번달 내역</div>
   <div class="lg-card">
     <div id="yjList"></div>
+  </div>
+
+  <div class="yj-modal" id="yjMoveModal" style="display:none">
+    <div class="yj-modal-box">
+      <div class="yj-modal-title">용돈 이체</div>
+      <div class="yj-xfer-line">
+        <span class="from">케이뱅크</span>
+        <span class="ar">→</span>
+        <span class="to">토스뱅크</span>
+      </div>
+      <div class="yj-xfer-bal" id="yjMoveBal"></div>
+      <input type="number" id="yjMoveAmt" placeholder="이체할 금액(원)" inputmode="numeric">
+      <div class="yj-modal-foot">
+        <span class="yj-modal-count"></span>
+        <div class="yj-modal-btns">
+          <button class="cancel" onclick="yjMoveClose()">취소</button>
+          <button class="save" style="background:#0064ff" onclick="yjDoMove()">이체</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="yj-modal" id="yjSayModal" style="display:none">
@@ -1161,14 +1178,18 @@ window.addEventListener('resize', () => {
     }
   }
 
-  // 화살표를 누르면 금액칸이 열리고, 다시 누르면 닫힌다
+  // 화살표를 누르면 이체 창이 뜬다
   window.yjToggleMove = function(){
-    var box = document.getElementById('yjMoveBox');
-    var btn = document.getElementById('yjXferBtn');
-    var open = box.style.display === 'none';
-    box.style.display = open ? 'flex' : 'none';
-    btn.classList.toggle('on', open);
-    if(open) document.getElementById('yjMoveAmt').focus();
+    var b = yjBalance();
+    document.getElementById('yjMoveBal').textContent =
+      '케이뱅크 ' + won(b.kbank) + ' 중에서';
+    var el = document.getElementById('yjMoveAmt');
+    el.value = '';
+    document.getElementById('yjMoveModal').style.display = 'flex';
+    el.focus();
+  };
+  window.yjMoveClose = function(){
+    document.getElementById('yjMoveModal').style.display = 'none';
   };
 
   window.yjDoMove = function(){
@@ -1180,8 +1201,7 @@ window.addEventListener('resize', () => {
     var a = yjLoad();
     a.push({id:yjNewId(), date:yjToday(), type:"move", cat:"", amt:amt});
     yjSave(a); el.value='';
-    document.getElementById('yjMoveBox').style.display = 'none';
-    document.getElementById('yjXferBtn').classList.remove('on');
+    yjMoveClose();
     yjRender();
   };
 

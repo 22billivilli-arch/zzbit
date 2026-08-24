@@ -198,24 +198,23 @@ check('9월엔 8월 기록 없음', !/240만/.test(cal9), true);
 W.yjMove(-1);
 check('8월로 되돌아옴', $('yjMonth').textContent, '2026년 8월');
 
-console.log('\n⑯ 화살표 이체 버튼');
-$('yjMoveBox').style.display = 'none';
-$('yjXferBtn').classList.remove('on');
-W.yjToggleMove();
-check('누르면 금액칸이 열린다', $('yjMoveBox').style.display, 'flex');
-check('버튼에 켜짐 표시', $('yjXferBtn').classList.contains('on'), true);
-W.yjToggleMove();
-check('다시 누르면 닫힌다', $('yjMoveBox').style.display, 'none');
-check('켜짐 표시도 꺼진다', $('yjXferBtn').classList.contains('on'), false);
-
+console.log('\n⑯ 화살표 → 이체 창');
 store['zzbit_yj_tx'] = '[]';
 W.yjRender();
+$('yjMoveModal').style.display = 'none';
+W.yjToggleMove();
+check('누르면 이체 창이 뜬다', $('yjMoveModal').style.display, 'flex');
+check('지금 케뱅 잔액을 알려준다', /케이뱅크/.test($('yjMoveBal').textContent), true);
+check('금액칸은 비어서 시작', $('yjMoveAmt').value, '');
+W.yjMoveClose();
+check('취소하면 닫힌다', $('yjMoveModal').style.display, 'none');
+
 W.yjToggleMove();
 $('yjMoveAmt').value = '80000';
 W.yjDoMove();
 check('이체하면 케뱅에서 빠지고', bal().k, SK - 80000);
 check('토스로 들어온다', bal().t, ST + 80000);
-check('이체 뒤 금액칸이 닫힌다', $('yjMoveBox').style.display, 'none');
+check('이체 뒤 창이 닫힌다', $('yjMoveModal').style.display, 'none');
 check('금액칸이 비워진다', $('yjMoveAmt').value, '');
 
 console.log('\n⑰ 잔액은 무슨 일이 있어도 먼저 그려진다');

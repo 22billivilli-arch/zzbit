@@ -154,7 +154,7 @@
   .lg-inc .x{color:var(--red);cursor:pointer;font-weight:700;padding:0 5px}
   .lg-inc-total{display:flex;justify-content:space-between;padding-top:9px;margin-top:4px;border-top:2px solid var(--text);font-weight:700;font-size:14px;font-family:var(--mono)}
   /* ── 예진 가계부 ── */
-  .yj{--yj:#7c3aed}
+  .yj{--yj:#7c3aed;--yj-in:#e84040;--yj-out:#2f6fd0}  /* 수입 빨강 · 지출 파랑 */
   .tabbar button.on.yj-on{background:var(--yj)}
   .yj-banks{display:flex;gap:8px;margin-bottom:10px}
   .yj-bank{flex:1;background:var(--bg2);border:2.5px solid var(--text);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:3px 3px 0 var(--text)}
@@ -168,8 +168,8 @@
   .yj-arrow{display:flex;align-items:center;font-family:var(--mono);color:var(--sub);font-size:18px;flex:0 0 auto}
   .yj-seg{display:flex;gap:6px;margin-bottom:8px}
   .yj-seg button{flex:1;background:var(--card);border:2px solid var(--text);border-radius:8px;padding:9px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--sans);color:var(--text);box-shadow:2px 2px 0 var(--text)}
-  .yj-seg button.on{background:var(--green);color:#fff}
-  .yj-seg button.on.out{background:var(--red)}
+  .yj-seg button.on{background:var(--yj-in);color:#fff}
+  .yj-seg button.on.out{background:var(--yj-out)}
   .yj-seg button:active{transform:translate(2px,2px);box-shadow:none}
   .yj-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
   .yj-sum .c{background:var(--bg2);border:2px solid var(--text);border-radius:10px;padding:10px}
@@ -178,10 +178,26 @@
   .yj-sum .c.wide{grid-column:1/-1}
   .yj-hint{font-size:11px;color:var(--sub);line-height:1.6;margin-top:8px}
   .yj-tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:5px;border:1.5px solid var(--border);margin-right:5px;font-weight:700}
-  .yj-tag.in{color:var(--green);border-color:var(--green)}
-  .yj-tag.out{color:var(--red);border-color:var(--red)}
+  .yj-tag.in{color:var(--yj-in);border-color:var(--yj-in)}
+  .yj-tag.out{color:var(--yj-out);border-color:var(--yj-out)}
   .yj-tag.mv{color:#0064ff;border-color:#0064ff}
   #yjCat,#yjDate{border:2px solid var(--text);border-radius:8px;padding:9px;font-size:13px;font-family:var(--sans);background:#fff;color:var(--text)}
+  /* 달력 — 수입은 빨강(+), 지출은 파랑(−) */
+  .yj-cal-head,.yj-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .yj-cal-head{margin-bottom:5px}
+  .yj-cal-head span{text-align:center;font-size:11px;font-weight:700;color:var(--sub);font-family:var(--mono)}
+  .yj-cal-head span.sun{color:#e84040}
+  .yj-cal-head span.sat{color:#2f6fd0}
+  .yj-cd{min-height:50px;padding:4px 1px 5px;border-radius:7px;text-align:center;background:var(--bg2);border:1.5px solid transparent}
+  .yj-cd.pad{background:transparent}
+  .yj-cd.today{border-color:var(--text);background:#fff;box-shadow:2px 2px 0 var(--text)}
+  .yj-cd .n{display:block;font-size:11px;font-family:var(--mono);color:var(--sub);margin-bottom:2px}
+  .yj-cd.today .n{color:var(--text);font-weight:700}
+  .yj-cd .i,.yj-cd .o{display:block;font-size:9.5px;font-family:var(--mono);font-weight:700;line-height:1.35;letter-spacing:-.3px}
+  .yj-cd .i{color:var(--yj-in)}
+  .yj-cd .o{color:var(--yj-out)}
+  .yj-callegend{display:flex;justify-content:center;gap:14px;margin-top:9px;font-size:11px;color:var(--sub)}
+  .yj-callegend b{font-family:var(--mono)}
   .lg-fx{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1.5px solid var(--border);cursor:pointer}
   .lg-fx:first-child{border-top:none}
   .lg-fx input[type=checkbox]{width:21px;height:21px;accent-color:var(--green);flex:0 0 auto}
@@ -393,11 +409,24 @@
   <div class="sec-title">📊 이번달 합계</div>
   <div class="lg-card">
     <div class="yj-sum">
-      <div class="c"><div class="l">총수입</div><div class="v" id="yjSumIn" style="color:var(--green)">₩0</div></div>
-      <div class="c"><div class="l">용돈 지출</div><div class="v" id="yjSumAllow" style="color:var(--red)">₩0</div></div>
-      <div class="c"><div class="l">고정지출</div><div class="v" id="yjSumFixed" style="color:var(--red)">₩0</div></div>
-      <div class="c"><div class="l">지출 합계</div><div class="v" id="yjSumOut" style="color:var(--red)">₩0</div></div>
+      <div class="c"><div class="l">총수입</div><div class="v" id="yjSumIn" style="color:var(--yj-in)">₩0</div></div>
+      <div class="c"><div class="l">용돈 지출</div><div class="v" id="yjSumAllow" style="color:var(--yj-out)">₩0</div></div>
+      <div class="c"><div class="l">고정지출</div><div class="v" id="yjSumFixed" style="color:var(--yj-out)">₩0</div></div>
+      <div class="c"><div class="l">지출 합계</div><div class="v" id="yjSumOut" style="color:var(--yj-out)">₩0</div></div>
       <div class="c wide"><div class="l">이번달 남은 돈 (수입 − 지출)</div><div class="v" id="yjSumNet">₩0</div></div>
+    </div>
+  </div>
+
+  <div class="sec-title">📅 달력</div>
+  <div class="lg-card">
+    <div class="yj-cal-head">
+      <span class="sun">일</span><span>월</span><span>화</span><span>수</span>
+      <span>목</span><span>금</span><span class="sat">토</span>
+    </div>
+    <div class="yj-cal-grid" id="yjCal"></div>
+    <div class="yj-callegend">
+      <span><b style="color:var(--yj-in)">+</b> 수입</span>
+      <span><b style="color:var(--yj-out)">−</b> 지출</span>
     </div>
   </div>
 
@@ -1090,6 +1119,47 @@ window.addEventListener('resize', () => {
     yjSave(a); yjRender();
   };
 
+  // 달력 칸은 좁다. 원 단위를 그대로 쓰면 넘치니 만·천 단위로 줄여 쓴다.
+  //   2,400,000 → 240만   23,000 → 2.3만   5,000 → 5천   500 → 500
+  function yjShort(n){
+    if(n>=10000){ var m=n/10000; return (m>=100 ? Math.round(m) : Math.round(m*10)/10)+'만'; }
+    if(n>=1000){ return (Math.round(n/100)/10)+'천'; }
+    return String(n);
+  }
+
+  function yjDrawCal(mon){
+    var p = yjYm.split('-'), y = +p[0], m = +p[1];
+    var firstDow = new Date(y, m-1, 1).getDay();      // 0=일요일
+    var days = new Date(y, m, 0).getDate();           // 이 달의 마지막 날
+
+    // 날짜별로 수입·지출을 합친다. 통장 간 이동은 수입도 지출도 아니라 넣지 않는다.
+    var byDay = {};
+    mon.forEach(function(x){
+      var d = +String(x.date).slice(8,10);
+      if(!byDay[d]) byDay[d] = {inc:0, out:0};
+      if(x.type==='in') byDay[d].inc += x.amt;
+      else if(x.type==='out') byDay[d].out += x.amt;
+    });
+
+    var t = new Date();
+    var todayYm = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0');
+    var todayD = (todayYm===yjYm) ? t.getDate() : 0;
+
+    var html = '';
+    for(var i=0;i<firstDow;i++) html += '<div class="yj-cd pad"></div>';
+    for(var d=1; d<=days; d++){
+      var v = byDay[d];
+      html += '<div class="yj-cd'+(d===todayD?' today':'')+'">'
+            + '<span class="n">'+d+'</span>'
+            + (v && v.inc ? '<span class="i">+'+yjShort(v.inc)+'</span>' : '')
+            + (v && v.out ? '<span class="o">−'+yjShort(v.out)+'</span>' : '')
+            + '</div>';
+    }
+    var tail = (firstDow + days) % 7;
+    if(tail) for(var j=tail;j<7;j++) html += '<div class="yj-cd pad"></div>';
+    document.getElementById('yjCal').innerHTML = html;
+  }
+
   window.yjRender = function(){
     var p = yjYm.split('-');
     document.getElementById('yjMonth').textContent = p[0]+'년 '+(+p[1])+'월';
@@ -1116,7 +1186,9 @@ window.addEventListener('resize', () => {
     document.getElementById('yjSumOut').textContent   = won(sOut);
     var nE = document.getElementById('yjSumNet');
     nE.textContent = won(net);
-    nE.style.color = net<0 ? 'var(--red)' : 'var(--green)';
+    nE.style.color = net<0 ? 'var(--yj-out)' : 'var(--text)';
+
+    yjDrawCal(mon);
 
     var dE = document.getElementById('yjDate');
     if(!dE.value) dE.value = yjToday();
@@ -1127,11 +1199,11 @@ window.addEventListener('resize', () => {
     document.getElementById('yjList').innerHTML = (list.length ? list.map(function(x){
       var tag, nm, sign, col;
       if(x.type==='move'){ tag='<span class="yj-tag mv">이동</span>'; nm='케이뱅크 → 토스뱅크'; sign=''; col='#0064ff'; }
-      else if(x.type==='in'){ tag='<span class="yj-tag in">수입</span>'; nm=x.cat; sign='+'; col='var(--green)'; }
+      else if(x.type==='in'){ tag='<span class="yj-tag in">수입</span>'; nm=x.cat; sign='+'; col='var(--yj-in)'; }
       else { tag='<span class="yj-tag out">지출</span>';
              nm = x.cat + (x.cat===YJ_ALLOW ? ' <small style="color:#0064ff">토스</small>'
                                             : ' <small style="color:#3b5bdb">케뱅</small>');
-             sign='−'; col='var(--red)'; }
+             sign='−'; col='var(--yj-out)'; }
       return '<div class="lg-inc"><span class="d">'+x.date.slice(5).replace('-','/')+' '+tag+nm+'</span>'
         + '<span><span class="a" style="color:'+col+'">'+sign+won(x.amt)+'</span> '
         + '<span class="x" onclick="yjDel('+x.id+')">✕</span></span></div>';

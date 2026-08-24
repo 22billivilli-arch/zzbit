@@ -160,5 +160,43 @@ check('기록 없으면 시작 잔액 그대로 (토스)', bal().t, ST);
 check('시작 잔액 안내 문구 표시', /시작 잔액/.test($('yjStartNote').innerHTML), true);
 check('합계는 시작 잔액에 안 섞인다', num($('yjSumIn').textContent), 0);
 
+console.log('\n⑮ 달력');
+// 2026년 8월 = 1일이 토요일, 31일까지
+store['zzbit_yj_tx'] = JSON.stringify([
+  { id: 1, date: '2026-08-01', type: 'in',   cat: '급여', amt: 2400000 },
+  { id: 2, date: '2026-08-01', type: 'out',  cat: '월세', amt: 650000  },
+  { id: 3, date: '2026-08-15', type: 'out',  cat: '용돈', amt: 23000   },
+  { id: 4, date: '2026-08-31', type: 'out',  cat: '휴대폰', amt: 89000 },
+  { id: 5, date: '2026-08-20', type: 'move', cat: '',    amt: 300000   },
+  { id: 6, date: '2026-09-03', type: 'in',   cat: '기타', amt: 50000   },
+]);
+while ($('yjMonth').textContent !== '2026년 8월') W.yjMove($('yjMonth').textContent > '2026년 8월' ? -1 : 1);
+W.yjRender();
+const cal = $('yjCal').innerHTML;
+const cells = cal.match(/<div class="yj-cd[^"]*"/g) || [];
+const pads = (cal.match(/yj-cd pad/g) || []).length;
+
+check('칸 수가 7의 배수', cells.length % 7, 0);
+check('8월 날짜 31칸', cells.length - pads, 31);
+check('1일이 토요일 → 앞 빈칸 6개', (cal.split('<div class="yj-cd pad"></div>').length - 1) >= 6, true);
+check('1일 수입 +240만', /<span class="n">1<\/span><span class="i">\+240만<\/span>/.test(cal), true);
+check('1일 지출 −65만', /1<\/span><span class="i">\+240만<\/span><span class="o">−65만<\/span>/.test(cal), true);
+check('15일 지출 −2.3만', /<span class="n">15<\/span><span class="o">−2\.3만<\/span>/.test(cal), true);
+check('31일 지출 −8.9만', /<span class="n">31<\/span><span class="o">−8\.9만<\/span>/.test(cal), true);
+check('이동은 달력에 안 나온다 (20일 비어있음)', /<span class="n">20<\/span><\/div>/.test(cal), true);
+check('다음달 기록은 안 섞인다 (3일 비어있음)', /<span class="n">3<\/span><\/div>/.test(cal), true);
+check('수입은 빨강', /class="i"/.test(cal) && /--yj-in/.test(html), true);
+check('지출은 파랑', /class="o"/.test(cal) && /--yj-out/.test(html), true);
+
+W.yjMove(1);
+const cal9 = $('yjCal').innerHTML;
+check('9월로 넘기면 30칸', (cal9.match(/<div class="yj-cd[^"]*"/g) || []).length
+      - (cal9.match(/yj-cd pad/g) || []).length, 30);
+check('9월 3일 수입 +5만', /<span class="n">3<\/span><span class="i">\+5만<\/span>/.test(cal9), true);
+check('9월엔 8월 기록 없음', !/240만/.test(cal9), true);
+
+W.yjMove(-1);
+check('8월로 되돌아옴', $('yjMonth').textContent, '2026년 8월');
+
 console.log(`\n${'='.repeat(46)}\n  통과 ${ok} · 실패 ${fail}`);
 process.exit(fail ? 1 : 0);

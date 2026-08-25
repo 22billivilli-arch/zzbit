@@ -88,8 +88,10 @@
   .trio{display:flex;gap:8px;margin-top:16px}
   .trio>div{flex:1;background:var(--bg);border-radius:12px;padding:11px 10px;min-width:0}
   .trio .lbl{font:600 11.5px Pretendard}
-  .trio .v{font:700 14px Pretendard;color:var(--text);margin-top:3px;
+  .trio .v{font:700 13.5px Pretendard;color:var(--text);margin-top:3px;letter-spacing:-.4px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .trio>div.tap{cursor:pointer}
+  .trio>div.tap .lbl::after{content:' ›';color:var(--muted)}
   .modal .trio>div{padding:10px 8px}
   .modal .trio .v{font-size:12.5px;letter-spacing:-.3px}
   .big2{font:700 26px Pretendard;color:var(--text);letter-spacing:-.8px;margin-top:7px;word-break:break-all}
@@ -330,15 +332,10 @@
         <div class="big2 num" id="lgOut" style="color:var(--minus)">₩0</div>
         <div class="hint num" id="lgOutWon"></div>
         <div class="trio">
-          <div><div class="lbl">고정지출</div><div class="v num" id="lgFixedSum">₩0</div></div>
+          <div class="tap" onclick="lgFxOpen(true)"><div class="lbl">고정지출</div><div class="v num" id="lgFixedSum">₩0</div></div>
           <div><div class="lbl">신한</div><div class="v num" id="lgShinhanV">₩0</div></div>
           <div><div class="lbl">롯데</div><div class="v num" id="lgLotteV">₩0</div></div>
         </div>
-      </div>
-
-      <div class="box">
-        <h3 onclick="lgToggleFx()" style="cursor:pointer">고정지출 <span id="lgFxCaret" style="color:var(--muted)">▾</span></h3>
-        <div id="lgFxList" hidden></div>
       </div>
 
       <div class="box">
@@ -416,6 +413,21 @@
       <div class="row"><span>전일 대비</span><span class="neutral num" id="chgAmt">—</span></div>
       <div class="row"><span>매수가</span><span class="neutral num">₩108,371,000</span></div>
       <div class="row"><span>매수금액</span><span class="neutral num">₩1,044,402</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 고정지출 창 ═══════════════════════════════════════ -->
+<div class="modal" id="lgFxModal" hidden onclick="if(event.target===this)lgFxOpen(false)">
+  <div class="modal-box" style="max-height:80vh;overflow:auto">
+    <div class="modal-t" style="display:flex;justify-content:space-between;align-items:center">
+      <span>고정지출</span>
+      <button onclick="lgFxOpen(false)" style="border:none;background:none;font:700 18px Pretendard;color:var(--muted);cursor:pointer">✕</button>
+    </div>
+    <div id="lgFxList"></div>
+    <div class="row" style="border-top:1px solid var(--line);border-bottom:none;margin-top:4px">
+      <span style="font-weight:700">합계</span>
+      <span class="minus num" id="lgFxTotal">₩0</span>
     </div>
   </div>
 </div>
@@ -1107,10 +1119,9 @@ window.addEventListener('resize', () => {
     lgRender();
   };
   window.lgDelSpend = function(i){ var a=loadSpend(); a.splice(i,1); saveSpend(a); lgRender(); };
-  window.lgToggleFx = function(){
-    var el=document.getElementById('lgFxList'), c=document.getElementById('lgFxCaret');
-    el.hidden = !el.hidden;
-    if(c) c.textContent = el.hidden ? '▾' : '▴';
+  // 고정지출은 창으로 본다. 목록이 길어 접기보다 창이 낫다.
+  window.lgFxOpen = function(open){
+    document.getElementById('lgFxModal').hidden = !open;
   };
 
   window.lgRender = function(){
@@ -1118,6 +1129,8 @@ window.addEventListener('resize', () => {
     document.getElementById('lgMonth').textContent = p[0]+'년 '+(+p[1])+'월';
     var fx = activeFixed(), fsum = fixedSum();
     document.getElementById('lgFixedSum').textContent = won(fsum);
+    var fxT = document.getElementById('lgFxTotal');
+    if(fxT) fxT.textContent = won(fsum);
     var inc = loadIncome();
     var incIn = document.getElementById('lgIncome');
     if(incIn && document.activeElement!==incIn) incIn.value = inc||'';

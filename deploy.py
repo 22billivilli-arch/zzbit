@@ -42,7 +42,7 @@ LOGIN_CSS = """
 
 BOOT = """
 <div class="bank-sync" id="bankSync">저장됨</div>
-<script src="/bank/sync.js"></script>
+<script src="/bank/sync.js?v=__VER__"></script>
 <script>
 // 서버에서 자료를 받아온 뒤 화면을 다시 그린다.
 bankBoot().then(function(ok){
@@ -86,7 +86,8 @@ def build():
 
     # ④ 로그인 화면·동기화 붙이기
     s = s.replace("</style>", LOGIN_CSS, 1)
-    s = s.replace("</body>", BOOT, 1)
+    ver = str(int(Path(BASE / "index.html").stat().st_mtime))
+    s = s.replace("</body>", BOOT.replace("__VER__", ver), 1)
 
     io.open(OUT / "index.html", "w", encoding="utf-8").write(s)
     for p in BASE.glob("*.png"):

@@ -305,7 +305,7 @@
 <div class="person-card yejin">
   <div class="person-header">
     <div class="person-avatar avatar-yejin">예</div>
-    <div><div class="person-name">예진</div><div class="person-share">0.00963728 BTC</div></div>
+    <div><div class="person-name">예진</div><div class="person-share">0.00963728 BTC · 미매수 현금 ₩955,598</div></div>
     <div class="person-badge badge neu" id="yejinBadge">—</div>
   </div>
   <div class="person-grid">
@@ -503,15 +503,20 @@ const SCENES = {
 };
 </script>
 <script>
-/* 매수 내역 — 108,371,000원에 1,044,402원어치 (= 0.00963728 BTC)
+/* 매수 내역
+     넣은 돈 200만원 중 1,044,402원어치만 샀다(108,371,000원에 0.00963728 BTC).
+     나머지 955,598원은 아직 안 산 현금이라 그대로 남아 있다.
+     그래서 평가액은 [코인값 + 현금] 이고, 이걸 빼먹으면 크게 손실난 것처럼 보인다.
    제호는 전부 뺐으므로 남은 것은 모두 예진 몫이다. */
 const BUY_PRICE=108_371_000, BUY_AMOUNT=1_044_402;
 const YEJIN_QTY=0.00963728, YEJIN_COST=2_000_000;   /* 예진이 넣은 돈 */
+const YEJIN_CASH=YEJIN_COST-BUY_AMOUNT;             /* 아직 안 산 현금 */
 const YEHO_QTY=0,           YEHO_COST=0;            /* 제호 — 다 뺐다 */
+const YEHO_CASH=0;
 const YEHO_EXTRA_QTY=0,     YEHO_EXTRA_COST=0;
 const YEHO_TOTAL_QTY=YEHO_QTY+YEHO_EXTRA_QTY, YEHO_TOTAL_COST=YEHO_COST+YEHO_EXTRA_COST;
 const JOINT_QTY=YEJIN_QTY+YEHO_QTY, JOINT_COST=YEJIN_COST+YEHO_COST;
-const HALF_QTY=YEJIN_QTY, HALF_COST=YEJIN_COST;     /* 화면의 '예진' 칸이 쓰는 값 */
+const HALF_QTY=YEJIN_QTY, HALF_COST=YEJIN_COST, HALF_CASH=YEJIN_CASH;  /* 화면의 '예진' 칸 */
 /* 투자금이 0이면 수익률을 낼 수 없다. 0으로 나누지 않게 막는다. */
 const pctOf=(pnl,cost)=>cost>0?(pnl/cost)*100:0;
 let curKrw=null;
@@ -921,10 +926,11 @@ async function loadPrice() {
 
 function renderAll() {
   if(!curKrw) return;
-  const jointEval=JOINT_QTY*curKrw,jointPnl=jointEval-JOINT_COST,jointPct=(jointPnl/JOINT_COST)*100;
-  const halfEval=HALF_QTY*curKrw,halfPnl=halfEval-HALF_COST,halfPct=pctOf(halfPnl,HALF_COST);
+  /* 배너는 '코인이 얼마나 올랐나'만 본다. 현금은 빼고 매수액을 기준으로 삼는다. */
+  const jointEval=JOINT_QTY*curKrw,jointPnl=jointEval-BUY_AMOUNT,jointPct=pctOf(jointPnl,BUY_AMOUNT);
+  const halfEval=HALF_QTY*curKrw+HALF_CASH,halfPnl=halfEval-HALF_COST,halfPct=pctOf(halfPnl,HALF_COST);
   const extraEval=YEHO_EXTRA_QTY*curKrw,extraPnl=extraEval-YEHO_EXTRA_COST;
-  const yehoTotalEval=YEHO_TOTAL_QTY*curKrw,yehoTotalPnl=yehoTotalEval-YEHO_TOTAL_COST;
+  const yehoTotalEval=YEHO_TOTAL_QTY*curKrw+YEHO_CASH,yehoTotalPnl=yehoTotalEval-YEHO_TOTAL_COST;
   const yehoTotalPct=pctOf(yehoTotalPnl,YEHO_TOTAL_COST);
   const pnlWon=Math.round(jointPnl);
   const fCount=getFurnitureCount(pnlWon);
@@ -949,8 +955,8 @@ function renderAll() {
   document.getElementById('yejinPnl').textContent=fsign(halfPnl);document.getElementById('yejinPnl').className='ps-val '+hc;
   document.getElementById('yejinPct').textContent=fp(halfPct);document.getElementById('yejinPct').className='ps-val '+hc;
   document.getElementById('yejinBadge').textContent=fp(halfPct);document.getElementById('yejinBadge').className='person-badge badge '+(halfPnl>=0?'up':'down');
-  document.getElementById('yehoSharedEval').textContent=fk(YEHO_QTY*curKrw);
-  const yehoSharedPnl=YEHO_QTY*curKrw-YEHO_COST;
+  document.getElementById('yehoSharedEval').textContent=fk(YEHO_QTY*curKrw+YEHO_CASH);
+  const yehoSharedPnl=YEHO_QTY*curKrw+YEHO_CASH-YEHO_COST;
   document.getElementById('yehoSharedPnl').textContent=fsign(yehoSharedPnl);
   const ec=extraPnl>=0?'cg':'cr';
   document.getElementById('yehoExtraEval').textContent=fk(extraEval);

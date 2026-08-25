@@ -15,6 +15,7 @@
   var TKEY = 'bank_token';    // 쿠키가 사라져도 로그인이 유지되도록 토큰을 따로 보관한다
   var PREFIX = /^zzbit_/;
   var pending = {}, timer = null;
+  var snap = {};              // 마지막으로 서버에 보낸 값 — 훑어볼 때 견준다
   var lastSaved = null, lastErr = '';
 
   // ── 이 기기 저장 (막혀 있을 수 있다) ──────────────────────
@@ -98,21 +99,62 @@
   }
 
   // ── 저장하는 길목을 가로챈다 ──────────────────────────────
+  // 브라우저에 따라 localStorage 의 함수를 바꿔치기하는 것이 막혀 있다.
+  // (사파리에서 그런 일이 있었고, 그러면 저장을 알아채지 못해 서버로 아무것도 안 갔다)
+  // 그래서 두 겹으로 잡는다.
+  //   ① 함수 바꿔치기 — 되면 저장하는 즉시 알아챈다
+  //   ② 이따금 훑어보기 — 바꿔치기가 막혀도 바뀐 것을 찾아낸다
+  function onChanged(k, v) {
+    if (!PREFIX.test(k)) return;
+    pending[k] = (v === null) ? null : tryParse(v);
+    snap[k] = v;                       // 훑어보기가 또 잡지 않도록
+    mark('saving');
+    schedule();
+  }
+
   try {
-    localStorage.setItem = function (k, v) {
+    // 인스턴스가 막혀 있으면 프로토타입 쪽을 고친다
+    var target = localStorage;
+    var proto = Object.getPrototypeOf(localStorage) || Storage.prototype;
+    var wrapSet = function (k, v) {
       safeSet(k, v);
-      if (PREFIX.test(k)) { pending[k] = tryParse(v); mark('saving'); schedule(); }
+      onChanged(k, String(v));
     };
-    localStorage.removeItem = function (k) {
+    var wrapDel = function (k) {
       delete mem[k];
       try { origDel(k); } catch (e) {}
-      if (PREFIX.test(k)) { pending[k] = null; mark('saving'); schedule(); }
+      onChanged(k, null);
     };
-    localStorage.getItem = function (k) { return safeGet(k); };
+    target.setItem = wrapSet;
+    target.removeItem = wrapDel;
+    target.getItem = function (k) { return safeGet(k); };
+    if (target.setItem !== wrapSet && proto) {      // 인스턴스에 못 붙었으면
+      proto.setItem = wrapSet;
+      proto.removeItem = wrapDel;
+    }
   } catch (e) {
-    mark('offline');
+    lastErr = '가로채기 막힘';
   }
   function tryParse(v) { try { return JSON.parse(v); } catch (e) { return v; } }
+
+  // ② 이따금 훑어본다 — 가로채기가 막혀도 이쪽이 잡아낸다
+  function scanAll() {
+    var seen = {};
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || !PREFIX.test(k)) continue;
+        seen[k] = true;
+        var v = origGet(k);
+        if (snap[k] !== v) { snap[k] = v; pending[k] = tryParse(v); }
+      }
+    } catch (e) {}
+    for (var k2 in mem) {                          // 저장이 막힌 기기 몫
+      if (!PREFIX.test(k2) || seen[k2]) continue;
+      if (snap[k2] !== mem[k2]) { snap[k2] = mem[k2]; pending[k2] = tryParse(mem[k2]); }
+    }
+    if (Object.keys(pending).length) { mark('saving'); schedule(200); }
+  }
 
   // 창을 닫기 전에 남은 것을 마저 보낸다
   window.addEventListener('beforeunload', function () {
@@ -212,14 +254,31 @@
           safeSet(k, (typeof v === 'string') ? v : JSON.stringify(v));
         });
         mark('saved');
+        startScan();
         return true;
       })
       .catch(function (e) {
+        startScan();
         // 서버가 안 되면 이 기기에 남아 있는 것으로라도 보여준다
         lastErr = String(e && e.message ? e.message : e).slice(0, 60);
         mark('offline');
         return true;
       });
+  }
+
+  // 서버 것을 받은 뒤부터 훑어본다. 그 전에 돌면 옛 값을 올려버릴 수 있다.
+  var scanning = false;
+  function startScan() {
+    if (scanning) return;
+    scanning = true;
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && PREFIX.test(k)) snap[k] = origGet(k);
+      }
+    } catch (e) {}
+    for (var k2 in mem) if (PREFIX.test(k2)) snap[k2] = mem[k2];
+    setInterval(scanAll, 1500);
   }
 
   // ── 지금 어떤 상태인지 (저장 표시를 누르면 뜬다) ──────────

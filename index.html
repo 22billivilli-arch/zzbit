@@ -333,27 +333,24 @@
         <div class="hint num" id="lgOutWon"></div>
         <div class="trio">
           <div class="tap" onclick="lgFxOpen(true)"><div class="lbl">고정지출</div><div class="v num" id="lgFixedSum">₩0</div></div>
-          <div><div class="lbl">신한</div><div class="v num" id="lgShinhanV">₩0</div></div>
-          <div><div class="lbl">롯데</div><div class="v num" id="lgLotteV">₩0</div></div>
+          <div><div class="lbl">신한카드</div><div class="v num" id="lgShinhanV">₩0</div></div>
+          <div><div class="lbl">이달 수입</div><div class="v num" id="lgIncSum" style="color:var(--plus)">₩0</div></div>
         </div>
       </div>
 
       <div class="box">
         <h3>이달의 수입</h3>
         <div class="fields">
-          <input type="number" class="fld" id="lgIncome" placeholder="이달 수입" inputmode="numeric" style="flex:1 1 100%">
+          <input type="date" class="fld" id="lgIncDate" style="flex:1 1 138px">
+          <select class="fld" id="lgIncCat" style="flex:1 1 100px">
+            <option>사무실</option><option>가게</option><option>팁</option>
+          </select>
         </div>
-        <button class="save" onclick="lgSaveIncome()">저장</button>
-        <div class="rulehint num" id="lgIncomeV"></div>
-      </div>
-
-      <div class="box">
-        <h3>카드값</h3>
-        <div class="fields">
-          <input type="number" class="fld" id="lgShinhan" placeholder="신한카드" inputmode="numeric" style="flex:1 1 130px">
-          <input type="number" class="fld" id="lgLotte" placeholder="롯데카드" inputmode="numeric" style="flex:1 1 130px">
+        <div class="fields" style="margin-top:8px">
+          <input type="number" class="fld" id="lgIncAmt" placeholder="금액" inputmode="numeric" style="flex:1 1 100%">
         </div>
-        <button class="save" onclick="lgSaveCard()">저장</button>
+        <button class="save" onclick="lgAddIncome()">추가</button>
+        <div id="lgIncList" style="margin-top:14px"></div>
       </div>
 
       <div class="box">
@@ -458,6 +455,7 @@
   </div>
   <div id="coinRain"></div>
   <div id="chgBadge"></div><div id="priceRow"></div><div id="liveTxt"></div>
+  <input id="lgShinhan"><input id="lgLotte"><div id="lgLotteV"></div>
   <div id="yejinBadge"></div><div id="yehoBadge"></div>
   <div id="yehoSharedEval"></div><div id="yehoSharedPnl"></div>
   <div id="yehoExtraEval"></div><div id="yehoExtraPnl"></div>
@@ -1013,8 +1011,7 @@ window.addEventListener('resize', () => {
     var bank = b.kbank + b.toss;
 
     var fsum = fixedSum();
-    var card = loadCard();
-    var out  = fsum + (card.shinhan||0) + (card.lotte||0);
+    var out  = fsum + shinhanOf(lgYm);
 
     var sp = loadSpend();
     var LG_EXCL = ['신한카드','롯데카드','생활비','대출'];
@@ -1044,10 +1041,11 @@ window.addEventListener('resize', () => {
     var items = [];
     yjLoad().filter(function(x){ return String(x.date).slice(0,7)===yjYm && x.type!=='move'; })
       .forEach(function(x){ items.push({who:'예진', nm:x.cat, amt:x.amt, plus:x.type==='in'}); });
-    var inc = loadIncome();
-    if(inc)          items.push({who:'제호', nm:'수입',     amt:inc,          plus:true});
-    if(card.shinhan) items.push({who:'제호', nm:'신한카드', amt:card.shinhan, plus:false});
-    if(card.lotte)   items.push({who:'제호', nm:'롯데카드', amt:card.lotte,   plus:false});
+    loadIncList().forEach(function(e){
+      items.push({who:'제호', nm:e.cat, amt:e.amt, plus:true});
+    });
+    var sh = shinhanOf(lgYm);
+    if(sh) items.push({who:'제호', nm:'신한카드', amt:sh, plus:false});
     sp.forEach(function(e){ items.push({who:'제호', nm:(e.memo||'용돈'), amt:e.amt, plus:false}); });
     items.sort(function(a,b){ return b.amt-a.amt; });
 
@@ -1072,6 +1070,14 @@ window.addEventListener('resize', () => {
     {id:'hair',      name:'헤어',      amt:100000,  rule:'always'},
     {id:'biz',       name:'사업비',     amt:590000,  rule:'always', note:'창고·세무30+툴10+클로드코드19'}
   ];
+  // 신한카드는 앞으로 낼 돈이 이미 정해져 있다. 달마다 적어 둔다.
+  var LG_SHINHAN = {
+    '2026-09':2035000, '2026-10':2035000, '2026-11':1925000, '2026-12':832000,
+    '2027-01':832000,  '2027-02':724000,  '2027-03':343000,
+    '2027-04':222000,  '2027-05':222000
+  };
+  function shinhanOf(ym){ return LG_SHINHAN[ym] || 0; }
+
   var _n = new Date();
   var lgYm = _n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0');
 
@@ -1082,14 +1088,30 @@ window.addEventListener('resize', () => {
   function fixedSum(){ return activeFixed().reduce(function(s,e){ return s+e.amt; },0); }
   function k(t){ return 'zzbit_lg_'+t+'_'+lgYm; }
   function loadCard(){ try{ return JSON.parse(localStorage.getItem(k('card')))||{}; }catch(e){ return {}; } }
-  // 제호 이달의 수입 — 달마다 따로 둔다
-  function loadIncome(){ var v=parseInt(localStorage.getItem(k('income'))||'0',10); return isNaN(v)?0:v; }
-  window.lgSaveIncome = function(){
-    var el = document.getElementById('lgIncome');
+  // 제호 수입 — 날짜·종류·금액을 하나씩 쌓는다. 달마다 따로 둔다.
+  function loadIncList(){
+    try{ var a = JSON.parse(localStorage.getItem(k('inclist'))); if(Array.isArray(a)) return a; }catch(e){}
+    // 예전에 한 칸으로 적어 두었던 값이 있으면 한 건으로 읽어 준다
+    var old = parseInt(localStorage.getItem(k('income'))||'0',10);
+    return (old>0) ? [{date:lgYm+'-01', cat:'사무실', amt:old}] : [];
+  }
+  function saveIncList(a){ try{ localStorage.setItem(k('inclist'), JSON.stringify(a)); }catch(e){} }
+  function loadIncome(){ return loadIncList().reduce(function(s,e){ return s+e.amt; },0); }
+
+  window.lgAddIncome = function(){
+    var d = document.getElementById('lgIncDate').value || (lgYm+'-01');
+    var c = document.getElementById('lgIncCat').value;
+    var el = document.getElementById('lgIncAmt');
     var v = parseInt((el.value||'').replace(/[^0-9]/g,''),10);
-    try{ localStorage.setItem(k('income'), String(isNaN(v)?0:v)); }catch(e){}
+    if(!v){ alert('금액을 입력하세요'); return; }
+    var a = loadIncList();
+    a.push({date:d, cat:c, amt:v});
+    saveIncList(a);
+    el.value='';
+    lgYm = d.slice(0,7);            // 넣은 달로 옮겨 바로 보이게
     lgRender();
   };
+  window.lgDelIncome = function(i){ var a=loadIncList(); a.splice(i,1); saveIncList(a); lgRender(); };
   function saveCardObj(o){ try{ localStorage.setItem(k('card'), JSON.stringify(o)); }catch(e){} }
   function loadSpend(){ try{ return JSON.parse(localStorage.getItem(k('spend')))||[]; }catch(e){ return []; } }
   function saveSpend(a){ try{ localStorage.setItem(k('spend'), JSON.stringify(a)); }catch(e){} }
@@ -1131,19 +1153,29 @@ window.addEventListener('resize', () => {
     document.getElementById('lgFixedSum').textContent = won(fsum);
     var fxT = document.getElementById('lgFxTotal');
     if(fxT) fxT.textContent = won(fsum);
-    var inc = loadIncome();
-    var incIn = document.getElementById('lgIncome');
-    if(incIn && document.activeElement!==incIn) incIn.value = inc||'';
-    var incV = document.getElementById('lgIncomeV');
-    if(incV) incV.textContent = inc ? won(inc)+' 들어옴' : '아직 없음';
+    // 이달의 수입 — 하나씩 쌓은 목록
+    var incs = loadIncList();
+    var inc  = incs.reduce(function(a,e){ return a+e.amt; },0);
+    document.getElementById('lgIncSum').textContent = won(inc);
+    var dIn = document.getElementById('lgIncDate');
+    if(dIn && !dIn.value) dIn.value = lgYm + '-01';
+    var il = document.getElementById('lgIncList');
+    if(il) il.innerHTML = incs.length
+      ? incs.slice().sort(function(a,b){ return a.date<b.date?1:-1; }).map(function(e){
+          var i = incs.indexOf(e);
+          return '<div class="row"><span>'+String(e.date).slice(5).replace('-','/')
+               + ' <span class="tagm">'+e.cat+'</span></span>'
+               + '<span><span class="plus num">+'+won(e.amt)+'</span> '
+               + '<span class="del" onclick="lgDelIncome('+i+')">✕</span></span></div>';
+        }).join('')
+        + '<div class="row" style="border-top:1px solid var(--line);border-bottom:none;margin-top:4px">'
+        + '<span style="font-weight:700">합계</span><span class="plus num">+'+won(inc)+'</span></div>'
+      : '<div class="empty">아직 없음</div>';
 
-    var card = loadCard(); var sh = card.shinhan||0, lt = card.lotte||0;
+    // 신한카드는 달마다 정해진 금액을 쓴다
+    var sh = shinhanOf(lgYm);
     document.getElementById('lgShinhanV').textContent = won(sh);
-    document.getElementById('lgLotteV').textContent = won(lt);
-    var shIn=document.getElementById('lgShinhan'), ltIn=document.getElementById('lgLotte');
-    if(document.activeElement!==shIn) shIn.value = sh||'';
-    if(document.activeElement!==ltIn) ltIn.value = lt||'';
-    var out = fsum + sh + lt;
+    var out = fsum + sh;
     document.getElementById('lgOut').textContent = won(out);
     document.getElementById('lgOutWon').textContent = man(out);
     var fl = document.getElementById('lgFxList');

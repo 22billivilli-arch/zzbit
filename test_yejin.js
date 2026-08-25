@@ -179,7 +179,8 @@ const cells = cal.match(/<div class="cell[^"]*"/g) || [];
 const pads = (cal.match(/cell pad/g) || []).length;
 // 날짜 칸 하나를 통째로 꺼내 본다
 const cell = d => {
-  const m = new RegExp('<div class="cell[^"]*"><span>' + d + '</span>(.*?)</div></div>').exec(cal);
+  // 칸에 onclick 이 붙기도 하므로 여는 태그 전체를 느슨하게 잡는다
+  const m = new RegExp('<div class="cell[^>]*><span>' + d + '</span>(.*?)</div></div>').exec(cal);
   return m ? m[1] : '';
 };
 const dotIn = d => cell(d).includes('var(--plus)');
@@ -203,7 +204,7 @@ W.yjMove(1);
 const cal9 = $('yjCal').innerHTML;
 check('9월로 넘기면 30칸', (cal9.match(/<div class="cell[^"]*"/g) || []).length
       - (cal9.match(/cell pad/g) || []).length, 30);
-check('9월 3일에 입금 점', /<div class="cell[^"]*"><span>3<\/span><div class="dots"><i style="background:var\(--plus\)/.test(cal9), true);
+check('9월 3일에 입금 점', /<div class="cell[^>]*><span>3<\/span><div class="dots"><i style="background:var\(--plus\)/.test(cal9), true);
 check('9월엔 8월 기록 없음', (cal9.match(/<i /g) || []).length, 1);
 
 W.yjMove(-1);
@@ -329,6 +330,32 @@ check('입금 버튼', /입금/.test(html), true);
 check('출금 버튼', /출금/.test(html), true);
 check('출금 카테고리 첫째가 용돈',
   /'out':\s*\['용돈'/.test(code), true);
+
+console.log('\n㉖ 달력 날짜를 누르면 그날 내역');
+store['zzbit_yj_tx'] = JSON.stringify([
+  { id: 1, date: '2026-08-10', type: 'in',  cat: '급여', amt: 2000000, memo: '', bank: 'k' },
+  { id: 2, date: '2026-08-10', type: 'out', cat: '용돈', amt: 12000, memo: '점심', bank: 't' },
+  { id: 3, date: '2026-08-10', type: 'move', cat: '', amt: 50000, dir: 'kt' },
+  { id: 4, date: '2026-08-11', type: 'out', cat: '월세', amt: 650000, memo: '', bank: 'k' },
+]);
+while ($('yjMonth').textContent !== '2026년 8월') W.yjMove($('yjMonth').textContent > '2026년 8월' ? -1 : 1);
+W.yjRender();
+
+check('기록 있는 날은 누를 수 있다', /onclick="yjDayOpen\(10\)"/.test($('yjCal').innerHTML), true);
+check('기록 없는 날은 못 누른다', /onclick="yjDayOpen\(12\)"/.test($('yjCal').innerHTML), false);
+
+W.yjDayOpen(10);
+check('창이 열린다', $('yjDayModal').hidden, false);
+check('날짜가 제목에', $('yjDayTitle').textContent, '8월 10일');
+const dl = $('yjDayList').innerHTML;
+check('그날 것 3건', (dl.match(/class="row"/g) || []).length, 3);
+check('입금이 보인다', /급여/.test(dl), true);
+check('출금과 내용이 보인다', /용돈/.test(dl) && /점심/.test(dl), true);
+check('이체도 보인다', /케이뱅크 → 토스뱅크/.test(dl), true);
+check('다른 날 것은 안 섞인다', /월세/.test(dl), false);
+check('합계는 이체를 뺀 값', num($('yjDayTotal').textContent), 2000000 - 12000);
+W.yjDayClose();
+check('닫힌다', $('yjDayModal').hidden, true);
 
 console.log(`\n${'='.repeat(46)}\n  통과 ${ok} · 실패 ${fail}`);
 process.exit(fail ? 1 : 0);

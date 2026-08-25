@@ -111,8 +111,10 @@
     border:1px solid transparent;background:#fff;color:var(--header)}
   .btn.ghost{border-color:#e5e1d1}
   .btn.on{background:var(--olive);color:#fff;border-color:var(--olive)}
-  .fields{display:flex;flex-wrap:wrap;gap:8px}
-  .fields>*{min-width:0}
+  .fields{display:flex;gap:8px;margin-bottom:8px}
+  .fields>*{flex:1 1 0;min-width:0}        /* 어느 줄이든 칸을 고르게 나눈다 */
+  .fields:last-of-type{margin-bottom:0}
+  .btns,.banks{margin-bottom:8px}
   input.fld,select.fld{padding:13px 14px;background:var(--bg);border:none;border-radius:12px;
     font:600 14px Pretendard;color:var(--text);font-family:Pretendard,sans-serif}
   input.fld::placeholder{color:#c5c0ad;font-weight:500}
@@ -147,6 +149,8 @@
     border-radius:9px;background:var(--bg)}
   .cal .cell.pad{background:transparent}
   .cal .cell.today{background:var(--olive-pale);font-weight:700}
+  .cal .cell.tapday{cursor:pointer}
+  .cal .cell.tapday:active{background:var(--track)}
   .dots{display:flex;gap:2px;min-height:4px}
   .dots i{width:4px;height:4px;border-radius:50%}
   .legend{display:flex;gap:12px;margin-top:12px;font:600 11px Pretendard;color:var(--muted)}
@@ -287,16 +291,16 @@
           <button class="btn ghost" id="yjSegOut" onclick="yjSetType('out')">− 출금</button>
         </div>
         <div class="fields">
-          <input type="date" class="fld" id="yjDate" style="flex:1 1 138px">
-          <select class="fld" id="yjCat" style="flex:1 1 110px" onchange="yjCatChanged()"></select>
+          <input type="date" class="fld" id="yjDate">
+          <select class="fld" id="yjCat" onchange="yjCatChanged()"></select>
         </div>
         <div class="banks">
           <button id="yjBankK" onclick="yjSetBank('k')">케이뱅크</button>
           <button id="yjBankT" onclick="yjSetBank('t')">토스뱅크</button>
         </div>
-        <div class="fields" style="margin-top:10px">
-          <input type="number" class="fld" id="yjAmt" placeholder="금액" inputmode="numeric" style="flex:1 1 110px">
-          <input type="text" class="fld" id="yjMemo" placeholder="내용 (안 써도 돼요)" maxlength="30" style="flex:2 1 140px">
+        <div class="fields">
+          <input type="text" class="fld" id="yjMemo" placeholder="내용" maxlength="30">
+          <input type="number" class="fld" id="yjAmt" placeholder="금액" inputmode="numeric">
         </div>
         <button class="save" onclick="yjAdd()">저장</button>
         <div class="rulehint" id="yjRuleHint"></div>
@@ -413,6 +417,21 @@
       <div class="row"><span>전일 대비</span><span class="neutral num" id="chgAmt">—</span></div>
       <div class="row"><span>매수가</span><span class="neutral num">₩108,371,000</span></div>
       <div class="row"><span>매수금액</span><span class="neutral num">₩1,044,402</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 하루 내역 창 ═════════════════════════════════════ -->
+<div class="modal" id="yjDayModal" hidden onclick="if(event.target===this)yjDayClose()">
+  <div class="modal-box" style="max-height:80vh;overflow:auto">
+    <div class="modal-t" style="display:flex;justify-content:space-between;align-items:center">
+      <span id="yjDayTitle">하루 내역</span>
+      <button onclick="yjDayClose()" style="border:none;background:none;font:700 18px Pretendard;color:var(--muted);cursor:pointer">✕</button>
+    </div>
+    <div id="yjDayList"></div>
+    <div class="row" style="border-top:1px solid var(--line);border-bottom:none;margin-top:4px">
+      <span style="font-weight:700">이 날 합계</span>
+      <span class="num" id="yjDayTotal" style="font-weight:700">₩0</span>
     </div>
   </div>
 </div>
@@ -1421,6 +1440,39 @@ window.addEventListener('resize', () => {
     yjSave(a); yjRender();
   };
 
+  // 달력에서 날짜를 누르면 그날 들고난 것을 보여준다.
+  window.yjDayClose = function(){ document.getElementById('yjDayModal').hidden = true; };
+  window.yjDayOpen = function(d){
+    var p = yjYm.split('-');
+    var day = yjYm + '-' + String(d).padStart(2,'0');
+    var list = yjLoad().filter(function(x){ return String(x.date) === day; })
+                       .sort(function(a,b){ return b.id - a.id; });
+    var net = 0;
+    document.getElementById('yjDayTitle').textContent = (+p[1]) + '월 ' + d + '일';
+    document.getElementById('yjDayList').innerHTML = list.length
+      ? list.map(function(x){
+          var memo = (x.memo||'').trim();
+          var memoHtml = memo ? ' <span class="memo">· '+escH(memo)+'</span>' : '';
+          if(x.type === 'move'){
+            return '<div class="row"><span><span class="tagm mv">이체</span>'
+                 + (dirOf(x)==='kt' ? '케이뱅크 → 토스뱅크' : '토스뱅크 → 케이뱅크')
+                 + '</span><span class="neutral num">'+won(x.amt)+'</span></div>';
+          }
+          var bk = (bankOf(x)==='t') ? '토스' : '케뱅';
+          var isIn = (x.type === 'in');
+          net += isIn ? x.amt : -x.amt;
+          return '<div class="row"><span><span class="tagm '+(isIn?'in':'out')+'">'
+               + (isIn?'입금':'출금')+'</span>'+x.cat+' <span class="memo">'+bk+'</span>'+memoHtml
+               + '</span><span class="'+(isIn?'plus':'minus')+' num">'
+               + (isIn?'+':'−')+won(x.amt)+'</span></div>';
+        }).join('')
+      : '<div class="empty">이 날은 기록이 없어요.</div>';
+    var t = document.getElementById('yjDayTotal');
+    t.textContent = (net>=0?'+':'−') + won(Math.abs(net));
+    t.style.color = net>=0 ? 'var(--plus)' : 'var(--minus)';
+    document.getElementById('yjDayModal').hidden = false;
+  };
+
   // 달력 칸은 좁다. 원 단위를 그대로 쓰면 넘치니 만·천 단위로 줄여 쓴다.
   //   2,400,000 → 240만   23,000 → 2.3만   5,000 → 5천   500 → 500
   function yjShort(n){
@@ -1458,8 +1510,10 @@ window.addEventListener('resize', () => {
       if(v && v.inc) dots += '<i style="background:var(--plus)"></i>';
       if(v && v.fix) dots += '<i style="background:var(--minus)"></i>';
       if(v && v.out) dots += '<i style="background:var(--olive)"></i>';
-      html += '<div class="cell'+(d===todayD?' today':'')+'">'
-            + '<span>'+d+'</span><div class="dots">'+dots+'</div></div>';
+      var has = !!(v && (v.inc || v.fix || v.out));
+      html += '<div class="cell'+(d===todayD?' today':'')+(has?' tapday':'')+'"'
+            + (has ? ' onclick="yjDayOpen('+d+')"' : '')
+            + '><span>'+d+'</span><div class="dots">'+dots+'</div></div>';
     }
     var tail = (firstDow + days) % 7;
     if(tail) for(var j=tail;j<7;j++) html += '<div class="cell pad"></div>';

@@ -188,6 +188,41 @@
     try { if (window.yjRender) window.yjRender(); } catch (e) {}
   }
 
+  // 이미 열려 있는 화면에서 주소 뒤에 #reset 만 붙이면 브라우저는 다시 열지 않는다.
+  // 그때도 알아채도록 주소 변화를 듣는다.
+  window.addEventListener('hashchange', function () {
+    var h = location.hash || '';
+    if (h === '#reset') takeReset().then(bankPull).then(redraw);
+    else if (h.indexOf('#import=') === 0) takeImport().then(function (ok) {
+      if (!ok) return bankPull().then(redraw);
+      redraw();
+    });
+  });
+
+  // ── 이 기기만 비우기 (#reset) ─────────────────────────────
+  // 기기에 엉뚱한 기록이 남아 있으면 훑어보기가 그걸 서버로 올려버린다.
+  // 그럴 때 이 기기 것만 지우고 서버 것을 다시 받아온다. 서버는 건드리지 않는다.
+  function takeReset() {
+    if ((location.hash || '') !== '#reset') return Promise.resolve(false);
+    history.replaceState(null, '', API + '/');
+    if (!confirm('이 기기에 남은 가계부 기록을 지웁니다.\n서버에 있는 것은 그대로 두고 다시 받아옵니다.\n계속할까요?')) {
+      return Promise.resolve(false);
+    }
+    var ks = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && PREFIX.test(k)) ks.push(k);
+      }
+    } catch (e) {}
+    ks.forEach(function (k) { try { origDel(k); } catch (e) {} });
+    for (var k2 in mem) if (PREFIX.test(k2)) delete mem[k2];
+    for (var k3 in snap) delete snap[k3];
+    for (var k4 in pending) delete pending[k4];      // 올리려던 것도 취소
+    alert('이 기기 기록 ' + ks.length + '개를 지웠어요. 서버 것을 다시 받아옵니다.');
+    return Promise.resolve(false);                   // 이어서 서버 것을 받는다
+  }
+
   // ── 예전 주소에서 넘어온 기록 받기 ────────────────────────
   // move.html 이 주소 뒤에 #import=... 로 실어 보낸다.
   // 주소의 # 뒤는 서버로 가지 않으므로 이 기기 안에서만 처리된다.
@@ -233,9 +268,9 @@
       .catch(function () { return { locked: false, ok: true }; })   // 서버가 안 되면 일단 진행
       .then(function (me) {
         if (me.locked && !me.ok) { showLogin(); return null; }
-        return takeImport().then(function (imported) {
-          return imported ? true : bankPull();
-        });
+        return takeReset()
+          .then(takeImport)
+          .then(function (imported) { return imported ? true : bankPull(); });
       });
   };
 

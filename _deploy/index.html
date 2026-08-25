@@ -324,7 +324,7 @@
 <div class="person-card yejin">
   <div class="person-header">
     <div class="person-avatar avatar-yejin">예</div>
-    <div><div class="person-name">예진</div><div class="person-share">0.00963728 BTC · 미매수 현금 ₩955,598</div></div>
+    <div><div class="person-name">예진</div><div class="person-share">0.00963728 BTC · 현금 ₩1,110,009</div></div>
     <div class="person-badge badge neu" id="yejinBadge">—</div>
   </div>
   <div class="person-grid">
@@ -523,13 +523,15 @@ const SCENES = {
 </script>
 <script>
 /* 매수 내역
-     넣은 돈 200만원 중 1,044,402원어치만 샀다(108,371,000원에 0.00963728 BTC).
-     나머지 955,598원은 아직 안 산 현금이라 그대로 남아 있다.
-     그래서 평가액은 [코인값 + 현금] 이고, 이걸 빼먹으면 크게 손실난 것처럼 보인다.
+     처음 넣은 돈은 200만원. 그 뒤 사고팔며 154,411원을 이미 벌어 두어
+     지금 계좌에는 코인 1,044,402원어치(108,371,000원에 0.00963728 BTC)와
+     현금 1,110,009원이 있다.  (1,044,402 + 1,110,009 = 2,154,411)
+     그래서 평가액은 [코인값 + 현금] 이고, 현금을 빼먹으면 크게 손실난 것처럼 보인다.
+     현금은 사고팔 때마다 달라지므로 값이 바뀌면 아래 숫자만 고치면 된다.
    제호는 전부 뺐으므로 남은 것은 모두 예진 몫이다. */
 const BUY_PRICE=108_371_000, BUY_AMOUNT=1_044_402;
-const YEJIN_QTY=0.00963728, YEJIN_COST=2_000_000;   /* 예진이 넣은 돈 */
-const YEJIN_CASH=YEJIN_COST-BUY_AMOUNT;             /* 아직 안 산 현금 */
+const YEJIN_QTY=0.00963728, YEJIN_COST=2_000_000;   /* 예진이 처음 넣은 돈 */
+const YEJIN_CASH=1_110_009;                         /* 지금 남아 있는 현금 */
 const YEHO_QTY=0,           YEHO_COST=0;            /* 제호 — 다 뺐다 */
 const YEHO_CASH=0;
 const YEHO_EXTRA_QTY=0,     YEHO_EXTRA_COST=0;
@@ -1328,7 +1330,7 @@ window.addEventListener('resize', () => {
 </script>
 
 <div class="bank-sync" id="bankSync">저장됨</div>
-<script src="/bank/sync.js?v=1787627304"></script>
+<script src="/bank/sync.js?v=1787635120"></script>
 <script>
 // 서버에서 자료를 받아온 뒤 화면을 다시 그린다.
 bankBoot().then(function(ok){

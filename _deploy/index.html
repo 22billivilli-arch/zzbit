@@ -86,9 +86,12 @@
   .memo{color:var(--muted);font-weight:500}
 
   .trio{display:flex;gap:8px;margin-top:16px}
-  .trio>div{flex:1;background:var(--bg);border-radius:12px;padding:11px 13px;min-width:0}
+  .trio>div{flex:1;background:var(--bg);border-radius:12px;padding:11px 10px;min-width:0}
   .trio .lbl{font:600 11.5px Pretendard}
-  .trio .v{font:700 14px Pretendard;color:var(--text);margin-top:3px;word-break:break-all}
+  .trio .v{font:700 14px Pretendard;color:var(--text);margin-top:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .modal .trio>div{padding:10px 8px}
+  .modal .trio .v{font-size:12.5px;letter-spacing:-.3px}
   .big2{font:700 26px Pretendard;color:var(--text);letter-spacing:-.8px;margin-top:7px;word-break:break-all}
 
   /* ── 달 넘기기 ──────────────────────────────────────────── */
@@ -212,9 +215,9 @@
     <span class="hero-rate num" id="heroPct">—</span>
     <span class="hero-amt num" id="heroPnl">—</span>
   </div>
-  <div class="spark"><svg id="sparkSvg" width="100%" height="54" viewBox="0 0 320 54"
+  <div class="spark" onclick="zzAsset(true)" style="cursor:pointer"><svg id="sparkSvg" width="100%" height="54" viewBox="0 0 320 54"
        preserveAspectRatio="none" fill="none"></svg></div>
-  <div class="hero-foot num">
+  <div class="hero-foot num" onclick="zzAsset(true)" style="cursor:pointer">
     <span>BTC <span id="priceKrw">—</span></span>
     <span id="heroHold">—</span>
   </div>
@@ -223,33 +226,31 @@
 
 <div class="sheet">
   <div class="seg">
-    <button id="tabbtn-home"   class="on" onclick="zzTab('home')">요약</button>
-    <button id="tabbtn-asset"  onclick="zzTab('asset')">자산</button>
-    <button id="tabbtn-book"   onclick="zzTab('book')">가계부</button>
+    <button id="tabbtn-home" class="on" onclick="zzTab('home')">요약</button>
+    <button id="tabbtn-jh"   onclick="zzTab('jh')">제호 가계부</button>
+    <button id="tabbtn-yj"   onclick="zzTab('yj')">예진 가계부</button>
   </div>
 
   <!-- ══ 요약 ═══════════════════════════════════════════════ -->
   <section id="tab-home">
     <div class="grid">
       <div class="card solid">
-        <div class="lbl">통장에 남은 돈</div>
+        <div class="lbl">예진 이달의 수입</div>
         <div class="val num" id="sumLeft">₩0</div>
-        <div class="hint num" id="sumBankSub" style="color:#d5e0b0">케이 0 · 토스 0</div>
       </div>
       <div class="card">
-        <div class="lbl">이번달 나갈 돈</div>
-        <div class="val num" id="sumOut" style="color:var(--minus)">₩0</div>
-        <div class="hint">제호 고정 + 카드</div>
+        <div class="lbl">제호 이달의 수입</div>
+        <div class="val num" id="sumOut" style="color:var(--plus)">₩0</div>
       </div>
       <div class="card">
-        <div class="lbl">남은 용돈</div>
+        <div class="lbl">예진 남은 용돈</div>
+        <div class="val num" id="sumBank">₩0</div>
+        <div class="hint num" id="sumBankSub">케이뱅크 잔액</div>
+      </div>
+      <div class="card">
+        <div class="lbl">제호 남은 용돈</div>
         <div class="val num" id="sumPocket">₩0</div>
         <div class="bar"><i id="sumPocketBar" style="width:0%"></i></div>
-      </div>
-      <div class="card">
-        <div class="lbl">예진 이번달</div>
-        <div class="val num" id="sumBank">₩0</div>
-        <div class="hint num" id="sumFlow">입금 0 · 출금 0</div>
       </div>
     </div>
     <div class="box">
@@ -259,54 +260,10 @@
   </section>
 
   <!-- ══ 자산 ═══════════════════════════════════════════════ -->
-  <section id="tab-asset" hidden>
-    <div class="box" style="margin-top:0">
-      <div class="row" style="padding-top:0;border-bottom:none;padding-bottom:0">
-        <span style="font:700 15px Pretendard;color:var(--text)">예진</span>
-        <span style="font:700 16px Pretendard;color:var(--text)" class="num" id="yejinEval">₩0</span>
-      </div>
-      <div class="hint num" id="yejinHold" style="margin-top:6px">—</div>
-      <div class="trio">
-        <div><div class="lbl">투자금</div><div class="v num">₩2,000,000</div></div>
-        <div><div class="lbl">수익금</div><div class="v num" id="yejinPnl">₩0</div></div>
-        <div style="background:var(--olive-pale)">
-          <div class="lbl" style="color:#7d8a5c">수익률</div>
-          <div class="v num" id="yejinPct" style="color:#556e3c">0%</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="box" id="yehoCard">
-      <div class="row" style="padding-top:0;border-bottom:none;padding-bottom:0">
-        <span style="font:700 15px Pretendard;color:var(--text)">제호</span>
-        <span style="font:700 16px Pretendard;color:var(--text)" class="num" id="yehoTotalEval">₩0</span>
-      </div>
-      <div class="hint" style="margin-top:6px">전액 출금</div>
-      <div class="trio">
-        <div><div class="lbl">투자금</div><div class="v num">₩0</div></div>
-        <div><div class="lbl">수익금</div><div class="v num" id="yehoTotalPnl">₩0</div></div>
-        <div><div class="lbl">수익률</div><div class="v num" id="yehoTotalPct">0%</div></div>
-      </div>
-    </div>
-
-    <div class="box">
-      <h3>비트코인</h3>
-      <div class="row"><span>지금 시세</span><span class="neutral num" id="priceRow2">—</span></div>
-      <div class="row"><span>전일 대비</span><span class="neutral num" id="chgAmt">—</span></div>
-      <div class="row"><span>매수가</span><span class="neutral num">₩108,371,000</span></div>
-      <div class="row"><span>매수금액</span><span class="neutral num">₩1,044,402</span></div>
-    </div>
-  </section>
+  
 
   <!-- ══ 가계부 ═════════════════════════════════════════════ -->
-  <section id="tab-book" hidden>
-    <div class="who-seg">
-      <button id="whoYj" class="on" onclick="zzWho('yj')">예진 가계부</button>
-      <button id="whoJh" onclick="zzWho('jh')">제호 가계부</button>
-    </div>
-
-    <!-- ── 예진 ── -->
-    <div id="book-yj">
+  <section id="tab-yj" hidden>
       <div class="monthbar">
         <button onclick="yjMove(-1)">‹</button>
         <div class="m" id="yjMonth">—</div>
@@ -378,10 +335,9 @@
           <span><i style="background:var(--olive)"></i>용돈</span>
         </div>
       </div>
-    </div>
+  </section>
 
-    <!-- ── 제호 ── -->
-    <div id="book-jh" hidden>
+  <section id="tab-jh" hidden>
       <div class="monthbar">
         <button onclick="lgMove(-1)">‹</button>
         <div class="m" id="lgMonth">—</div>
@@ -405,6 +361,15 @@
       </div>
 
       <div class="box">
+        <h3>이달의 수입</h3>
+        <div class="fields">
+          <input type="number" class="fld" id="lgIncome" placeholder="이달 수입" inputmode="numeric" style="flex:1 1 100%">
+        </div>
+        <button class="save" onclick="lgSaveIncome()">저장</button>
+        <div class="rulehint num" id="lgIncomeV"></div>
+      </div>
+
+      <div class="box">
         <h3>카드값</h3>
         <div class="fields">
           <input type="number" class="fld" id="lgShinhan" placeholder="신한카드" inputmode="numeric" style="flex:1 1 130px">
@@ -425,9 +390,54 @@
         <button class="save" onclick="lgAddSpend()">추가</button>
         <div id="lgSpList" style="margin-top:14px"></div>
       </div>
-    </div>
   </section>
 </div><!-- /sheet -->
+
+<!-- ══ 자산 창 (차트를 누르면 뜬다) ═══════════════════════ -->
+<div class="modal" id="assetModal" hidden onclick="if(event.target===this)zzAsset(false)">
+  <div class="modal-box" style="max-width:370px;max-height:88vh;overflow:auto;padding:18px 16px">
+    <div class="modal-t" style="display:flex;justify-content:space-between;align-items:center">
+      <span>비트코인 자산</span>
+      <button onclick="zzAsset(false)" style="border:none;background:none;font:700 18px Pretendard;color:var(--muted);cursor:pointer">✕</button>
+    </div>
+<div class="box" style="margin-top:0">
+      <div class="row" style="padding-top:0;border-bottom:none;padding-bottom:0">
+        <span style="font:700 15px Pretendard;color:var(--text)">예진</span>
+        <span style="font:700 16px Pretendard;color:var(--text)" class="num" id="yejinEval">₩0</span>
+      </div>
+      <div class="hint num" id="yejinHold" style="margin-top:6px">—</div>
+      <div class="trio">
+        <div><div class="lbl">투자금</div><div class="v num">₩2,000,000</div></div>
+        <div><div class="lbl">수익금</div><div class="v num" id="yejinPnl">₩0</div></div>
+        <div style="background:var(--olive-pale)">
+          <div class="lbl" style="color:#7d8a5c">수익률</div>
+          <div class="v num" id="yejinPct" style="color:#556e3c">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="box" id="yehoCard">
+      <div class="row" style="padding-top:0;border-bottom:none;padding-bottom:0">
+        <span style="font:700 15px Pretendard;color:var(--text)">제호</span>
+        <span style="font:700 16px Pretendard;color:var(--text)" class="num" id="yehoTotalEval">₩0</span>
+      </div>
+      <div class="hint" style="margin-top:6px">전액 출금</div>
+      <div class="trio">
+        <div><div class="lbl">투자금</div><div class="v num">₩0</div></div>
+        <div><div class="lbl">수익금</div><div class="v num" id="yehoTotalPnl">₩0</div></div>
+        <div><div class="lbl">수익률</div><div class="v num" id="yehoTotalPct">0%</div></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>비트코인</h3>
+      <div class="row"><span>지금 시세</span><span class="neutral num" id="priceRow2">—</span></div>
+      <div class="row"><span>전일 대비</span><span class="neutral num" id="chgAmt">—</span></div>
+      <div class="row"><span>매수가</span><span class="neutral num">₩108,371,000</span></div>
+      <div class="row"><span>매수금액</span><span class="neutral num">₩1,044,402</span></div>
+    </div>
+  </div>
+</div>
 
 <!-- ══ 이체 창 ═══════════════════════════════════════════════ -->
 <div class="modal" id="yjMoveModal" hidden>
@@ -880,7 +890,7 @@ async function loadPrice() {
     const cb=document.getElementById('chgBadge');
     cb.textContent=fp(chgPct);cb.className='badge '+(chgPct>0?'up':chgPct<0?'down':'neu');
     const ca=document.getElementById('chgAmt');
-    ca.textContent=(chgAmt>=0?'▲ +':'▼ ')+fk(Math.abs(chgAmt))+' (전일 대비)';
+    ca.textContent=(chgAmt>=0?'▲ +':'▼ ')+fk(Math.abs(chgAmt));
     ca.style.color=chgPct>0?'var(--green)':chgPct<0?'var(--red)':'var(--sub)';
     document.getElementById('priceRow').innerHTML=`
       <div><div class="pc-stat-label">24H 고가</div><div class="pc-stat-val">${fk(t.high_price)}</div></div>
@@ -986,26 +996,21 @@ window.addEventListener('resize', () => {
 <script>
 (function(){
   // ── 탭 전환 ──
-  // 탭은 요약 / 자산 / 가계부 셋. 스크롤 자리는 그대로 둔다.
-  var TABS = ['home','asset','book'];
+  // 탭은 요약 / 제호 가계부 / 예진 가계부 셋. 스크롤 자리는 그대로 둔다.
+  var TABS = ['home','jh','yj'];
   window.zzTab = function(t){
     TABS.forEach(function(x){
       document.getElementById('tab-'+x).hidden = (x!==t);
       document.getElementById('tabbtn-'+x).classList.toggle('on', x===t);
     });
-    if(t==='book'){ lgRender(); yjRender(); }
+    if(t==='jh') lgRender();
+    if(t==='yj') yjRender();
     if(t==='home'){ lgRender(); yjRender(); homeRender(); }
   };
 
-  // 가계부 안에서 사람을 바꾼다
-  var zzWhoNow = 'yj';
-  window.zzWho = function(w){
-    zzWhoNow = w;
-    document.getElementById('book-yj').hidden = (w!=='yj');
-    document.getElementById('book-jh').hidden = (w!=='jh');
-    document.getElementById('whoYj').classList.toggle('on', w==='yj');
-    document.getElementById('whoJh').classList.toggle('on', w==='jh');
-    if(w==='yj') yjRender(); else lgRender();
+  // 비트코인 자산 — 위쪽 차트를 누르면 열린다
+  window.zzAsset = function(open){
+    document.getElementById('assetModal').hidden = !open;
   };
 
   // ── 요약 ──────────────────────────────────────────────────
@@ -1026,41 +1031,36 @@ window.addEventListener('resize', () => {
     },0);
     var remainAllow = LG_ALLOWANCE - spentAllow;
 
-    // 예진 통장과 제호 고정비는 지갑이 다르다. 서로 빼지 않고 나란히 둔다.
-    document.getElementById('sumLeft').textContent = won(bank);
-    document.getElementById('sumBankSub').textContent =
-      '케이 ' + Math.round(b.kbank).toLocaleString('ko-KR') +
-      ' · 토스 ' + Math.round(b.toss).toLocaleString('ko-KR');
-    document.getElementById('sumOut').textContent    = won(out);
+    // 예진 이달의 수입 — 이번달 입금을 더한 것
+    var mIn = 0;
+    yjLoad().forEach(function(x){
+      if(x.type === 'in' && String(x.date).slice(0,7) === yjYm) mIn += x.amt;
+    });
+    document.getElementById('sumLeft').textContent = won(mIn);
+
+    // 제호 이달의 수입
+    document.getElementById('sumOut').textContent = won(loadIncome());
+
+    // 남은 용돈 — 예진은 케이뱅크 잔액, 제호는 용돈 한도에서 쓴 만큼 뺀 것
+    document.getElementById('sumBank').textContent   = won(b.kbank);
     document.getElementById('sumPocket').textContent = won(remainAllow);
     document.getElementById('sumPocketBar').style.width =
       Math.max(0, Math.min(100, remainAllow / LG_ALLOWANCE * 100)) + '%';
 
-    // 예진의 이번달 들고남
-    var mIn = 0, mOut = 0;
-    yjLoad().forEach(function(x){
-      if(String(x.date).slice(0,7) !== yjYm || x.type === 'move') return;
-      if(x.type === 'in') mIn += x.amt; else mOut += x.amt;
-    });
-    var net = mIn - mOut;
-    var nb = document.getElementById('sumBank');
-    nb.textContent = (net>=0?'+':'−') + won(Math.abs(net));
-    nb.style.color = net>=0 ? 'var(--plus)' : 'var(--minus)';
-    document.getElementById('sumFlow').textContent =
-      '입금 ' + Math.round(mIn).toLocaleString('ko-KR') +
-      ' · 출금 ' + Math.round(mOut).toLocaleString('ko-KR');
-
     // 이번달 내역 — 두 가계부에서 큰 것부터 몇 개만
     var items = [];
     yjLoad().filter(function(x){ return String(x.date).slice(0,7)===yjYm && x.type!=='move'; })
-      .forEach(function(x){ items.push({nm:x.cat, amt:x.amt, plus:x.type==='in'}); });
-    if(card.shinhan) items.push({nm:'신한카드', amt:card.shinhan, plus:false});
-    if(card.lotte)   items.push({nm:'롯데카드', amt:card.lotte,   plus:false});
+      .forEach(function(x){ items.push({who:'예진', nm:x.cat, amt:x.amt, plus:x.type==='in'}); });
+    var inc = loadIncome();
+    if(inc)          items.push({who:'제호', nm:'수입',     amt:inc,          plus:true});
+    if(card.shinhan) items.push({who:'제호', nm:'신한카드', amt:card.shinhan, plus:false});
+    if(card.lotte)   items.push({who:'제호', nm:'롯데카드', amt:card.lotte,   plus:false});
+    sp.forEach(function(e){ items.push({who:'제호', nm:(e.memo||'용돈'), amt:e.amt, plus:false}); });
     items.sort(function(a,b){ return b.amt-a.amt; });
 
     document.getElementById('sumList').innerHTML = items.length
-      ? items.slice(0,6).map(function(i){
-          return '<div class="row"><span>'+escH(i.nm)+'</span>'
+      ? items.slice(0,8).map(function(i){
+          return '<div class="row"><span><span class="tagm">'+i.who+'</span>'+escH(i.nm)+'</span>'
                + '<span class="'+(i.plus?'plus':'minus')+' num">'
                + (i.plus?'+':'−')+won(i.amt)+'</span></div>';
         }).join('')
@@ -1089,6 +1089,14 @@ window.addEventListener('resize', () => {
   function fixedSum(){ return activeFixed().reduce(function(s,e){ return s+e.amt; },0); }
   function k(t){ return 'zzbit_lg_'+t+'_'+lgYm; }
   function loadCard(){ try{ return JSON.parse(localStorage.getItem(k('card')))||{}; }catch(e){ return {}; } }
+  // 제호 이달의 수입 — 달마다 따로 둔다
+  function loadIncome(){ var v=parseInt(localStorage.getItem(k('income'))||'0',10); return isNaN(v)?0:v; }
+  window.lgSaveIncome = function(){
+    var el = document.getElementById('lgIncome');
+    var v = parseInt((el.value||'').replace(/[^0-9]/g,''),10);
+    try{ localStorage.setItem(k('income'), String(isNaN(v)?0:v)); }catch(e){}
+    lgRender();
+  };
   function saveCardObj(o){ try{ localStorage.setItem(k('card'), JSON.stringify(o)); }catch(e){} }
   function loadSpend(){ try{ return JSON.parse(localStorage.getItem(k('spend')))||[]; }catch(e){ return []; } }
   function saveSpend(a){ try{ localStorage.setItem(k('spend'), JSON.stringify(a)); }catch(e){} }
@@ -1129,6 +1137,12 @@ window.addEventListener('resize', () => {
     document.getElementById('lgMonth').textContent = p[0]+'년 '+(+p[1])+'월';
     var fx = activeFixed(), fsum = fixedSum();
     document.getElementById('lgFixedSum').textContent = won(fsum);
+    var inc = loadIncome();
+    var incIn = document.getElementById('lgIncome');
+    if(incIn && document.activeElement!==incIn) incIn.value = inc||'';
+    var incV = document.getElementById('lgIncomeV');
+    if(incV) incV.textContent = inc ? won(inc)+' 들어옴' : '아직 없음';
+
     var card = loadCard(); var sh = card.shinhan||0, lt = card.lotte||0;
     document.getElementById('lgShinhanV').textContent = won(sh);
     document.getElementById('lgLotteV').textContent = won(lt);

@@ -90,6 +90,8 @@
   .trio .lbl{font:600 11.5px Pretendard}
   .trio .v{font:700 13.5px Pretendard;color:var(--text);margin-top:3px;letter-spacing:-.4px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .trio.wrap{flex-wrap:wrap}
+  .trio.wrap>div{flex:1 1 calc(50% - 4px)}
   .trio>div.tap{cursor:pointer}
   .trio>div.tap .lbl::after{content:' ›';color:var(--muted)}
   .modal .trio>div{padding:10px 8px}
@@ -331,9 +333,10 @@
         <div class="lbl">이번달 나갈 돈</div>
         <div class="big2 num" id="lgOut" style="color:var(--minus)">₩0</div>
         <div class="hint num" id="lgOutWon"></div>
-        <div class="trio">
+        <div class="trio wrap">
           <div class="tap" onclick="lgFxOpen(true)"><div class="lbl">고정지출</div><div class="v num" id="lgFixedSum">₩0</div></div>
-          <div><div class="lbl">신한카드</div><div class="v num" id="lgShinhanV">₩0</div></div>
+          <div class="tap" onclick="lgCardOpen('shinhan')"><div class="lbl">신한카드</div><div class="v num" id="lgShinhanV">₩0</div></div>
+          <div class="tap" onclick="lgCardOpen('lotte')"><div class="lbl">롯데카드</div><div class="v num" id="lgLotteV2">₩0</div></div>
           <div><div class="lbl">이달 수입</div><div class="v num" id="lgIncSum" style="color:var(--plus)">₩0</div></div>
         </div>
       </div>
@@ -410,6 +413,22 @@
       <div class="row"><span>전일 대비</span><span class="neutral num" id="chgAmt">—</span></div>
       <div class="row"><span>매수가</span><span class="neutral num">₩108,371,000</span></div>
       <div class="row"><span>매수금액</span><span class="neutral num">₩1,044,402</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 카드 창 (신한·롯데) ═══════════════════════════════ -->
+<div class="modal" id="lgCardModal" hidden onclick="if(event.target===this)lgCardClose()">
+  <div class="modal-box" style="max-height:80vh;overflow:auto">
+    <div class="modal-t" style="display:flex;justify-content:space-between;align-items:center">
+      <span id="lgCardTitle">카드</span>
+      <button onclick="lgCardClose()" style="border:none;background:none;font:700 18px Pretendard;color:var(--muted);cursor:pointer">✕</button>
+    </div>
+    <div class="xbal" id="lgCardSub" style="text-align:left;margin-bottom:10px"></div>
+    <div id="lgCardList"></div>
+    <div class="row" style="border-top:1px solid var(--line);border-bottom:none;margin-top:4px">
+      <span style="font-weight:700">앞으로 낼 돈</span>
+      <span class="minus num" id="lgCardTotal">₩0</span>
     </div>
   </div>
 </div>
@@ -1011,7 +1030,7 @@ window.addEventListener('resize', () => {
     var bank = b.kbank + b.toss;
 
     var fsum = fixedSum();
-    var out  = fsum + shinhanOf(lgYm);
+    var out  = fsum + shinhanOf(lgYm) + lotteOf(lgYm);
 
     var sp = loadSpend();
     var LG_EXCL = ['신한카드','롯데카드','생활비','대출'];
@@ -1044,8 +1063,9 @@ window.addEventListener('resize', () => {
     loadIncList().forEach(function(e){
       items.push({who:'제호', nm:e.cat, amt:e.amt, plus:true});
     });
-    var sh = shinhanOf(lgYm);
+    var sh = shinhanOf(lgYm), lt = lotteOf(lgYm);
     if(sh) items.push({who:'제호', nm:'신한카드', amt:sh, plus:false});
+    if(lt) items.push({who:'제호', nm:'롯데카드', amt:lt, plus:false});
     sp.forEach(function(e){ items.push({who:'제호', nm:(e.memo||'용돈'), amt:e.amt, plus:false}); });
     items.sort(function(a,b){ return b.amt-a.amt; });
 
@@ -1076,7 +1096,15 @@ window.addEventListener('resize', () => {
     '2027-01':832000,  '2027-02':724000,  '2027-03':343000,
     '2027-04':222000,  '2027-05':222000
   };
+  var LG_LOTTE = {
+    '2026-09':388000, '2026-10':90000, '2026-11':90000, '2026-12':90000, '2027-01':90000
+  };
   function shinhanOf(ym){ return LG_SHINHAN[ym] || 0; }
+  function lotteOf(ym){ return LG_LOTTE[ym] || 0; }
+  var LG_CARDS = {
+    shinhan: { name:'신한카드', table:LG_SHINHAN },
+    lotte:   { name:'롯데카드', table:LG_LOTTE   }
+  };
 
   var _n = new Date();
   var lgYm = _n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0');
@@ -1146,6 +1174,30 @@ window.addEventListener('resize', () => {
     document.getElementById('lgFxModal').hidden = !open;
   };
 
+  // 카드는 앞으로 낼 돈이 달마다 정해져 있다. 눌러서 한눈에 본다.
+  window.lgCardClose = function(){ document.getElementById('lgCardModal').hidden = true; };
+  window.lgCardOpen = function(which){
+    var c = LG_CARDS[which];
+    if(!c) return;
+    var months = Object.keys(c.table).sort();
+    var ahead = 0;
+    var html = months.map(function(ym){
+      var past = ym < lgYm;                       // 이미 지난 달은 흐리게
+      if(!past) ahead += c.table[ym];
+      var p = ym.split('-');
+      return '<div class="row"' + (past ? ' style="opacity:.45"' : '') + '>'
+           + '<span>' + p[0].slice(2) + '년 ' + (+p[1]) + '월'
+           + (ym === lgYm ? ' <span class="tagm">이번달</span>' : '') + '</span>'
+           + '<span class="minus num">' + won(c.table[ym]) + '</span></div>';
+    }).join('');
+    document.getElementById('lgCardTitle').textContent = c.name;
+    document.getElementById('lgCardSub').textContent =
+      months.length + '개월치가 정해져 있어요. 흐린 줄은 이미 지난 달입니다.';
+    document.getElementById('lgCardList').innerHTML = html;
+    document.getElementById('lgCardTotal').textContent = won(ahead);
+    document.getElementById('lgCardModal').hidden = false;
+  };
+
   window.lgRender = function(){
     var p = lgYm.split('-');
     document.getElementById('lgMonth').textContent = p[0]+'년 '+(+p[1])+'월';
@@ -1172,10 +1224,11 @@ window.addEventListener('resize', () => {
         + '<span style="font-weight:700">합계</span><span class="plus num">+'+won(inc)+'</span></div>'
       : '<div class="empty">아직 없음</div>';
 
-    // 신한카드는 달마다 정해진 금액을 쓴다
-    var sh = shinhanOf(lgYm);
+    // 카드는 달마다 정해진 금액을 쓴다
+    var sh = shinhanOf(lgYm), lt = lotteOf(lgYm);
     document.getElementById('lgShinhanV').textContent = won(sh);
-    var out = fsum + sh;
+    document.getElementById('lgLotteV2').textContent  = won(lt);
+    var out = fsum + sh + lt;
     document.getElementById('lgOut').textContent = won(out);
     document.getElementById('lgOutWon').textContent = man(out);
     var fl = document.getElementById('lgFxList');

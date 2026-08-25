@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가계부 옮기기</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#e8e8e8;--card:#f5f5f5;--bg2:#e3e3e3;--border:#d4c9b0;
+    --accent:#f7931a;--green:#2a9d5c;--red:#e84040;--text:#2a2010;--sub:#8a7a60;
+    --mono:'Space Mono',monospace;--sans:'Noto Sans KR',sans-serif}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);
+    padding:26px 18px 60px;max-width:460px;margin:0 auto;line-height:1.7}
+  h1{font-size:21px;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--sub);margin-bottom:20px}
+  .card{background:var(--card);border:2.5px solid var(--text);border-radius:14px;
+    padding:16px;margin-bottom:14px;box-shadow:4px 4px 0 var(--text)}
+  .row{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;
+    border-bottom:1.5px solid var(--border)}
+  .row:last-child{border-bottom:none}
+  .row b{font-family:var(--mono)}
+  .none{color:var(--sub);font-size:13px;text-align:center;padding:14px 0}
+  button{width:100%;background:var(--accent);color:#fff;border:2.5px solid var(--text);
+    border-radius:12px;padding:15px;font-weight:700;font-size:16px;cursor:pointer;
+    box-shadow:4px 4px 0 var(--text);font-family:var(--sans);margin-top:4px}
+  button:active{transform:translate(4px,4px);box-shadow:none}
+  button[disabled]{background:var(--bg2);color:var(--sub);cursor:default}
+  .warn{font-size:12.5px;color:var(--sub);margin-top:12px;line-height:1.65}
+  .big{font-size:31px;font-weight:700;font-family:var(--mono);text-align:center;padding:8px 0}
+</style>
+</head>
+<body>
+
+<h1>📦 가계부 옮기기</h1>
+<p class="sub">여기(깃허브)에 남아 있는 기록을 새 주소로 옮깁니다.<br>
+  <b>지금까지 쓰던 그 기기·그 브라우저</b>에서 열어야 기록이 보입니다.</p>
+
+<div class="card">
+  <div class="big" id="count">…</div>
+  <div id="list"></div>
+</div>
+
+<button id="go" disabled>확인 중…</button>
+<p class="warn" id="note"></p>
+
+<script>
+(function () {
+  var found = {}, n = 0;
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (!k || k.indexOf('zzbit_') !== 0) continue;
+      found[k] = localStorage.getItem(k);
+      n++;
+    }
+  } catch (e) {}
+
+  // 사람이 알아보게 이름을 풀어 쓴다
+  function label(k) {
+    var m = /^zzbit_lg_(card|spend)_(\d{4})-(\d{2})$/.exec(k);
+    if (m) return (+m[3]) + '월 ' + (m[1] === 'card' ? '카드값' : '용돈 지출');
+    if (k === 'zzbit_yj_tx') return '예진 가계부 내역';
+    if (/^zzbit_yj_say_/.test(k)) return '예진 한마디';
+    return k;
+  }
+  function amount(k, v) {
+    try {
+      var d = JSON.parse(v);
+      if (Array.isArray(d)) return d.length + '건';
+      if (d && typeof d === 'object') {
+        var parts = [];
+        if (d.shinhan) parts.push('신한 ' + d.shinhan.toLocaleString());
+        if (d.lotte) parts.push('롯데 ' + d.lotte.toLocaleString());
+        return parts.join(' · ') || '있음';
+      }
+    } catch (e) {}
+    return '있음';
+  }
+
+  var keys = Object.keys(found).sort();
+  document.getElementById('count').textContent = n + '개';
+  document.getElementById('list').innerHTML = keys.length
+    ? keys.map(function (k) {
+        return '<div class="row"><span>' + label(k) + '</span><b>' + amount(k, found[k]) + '</b></div>';
+      }).join('')
+    : '<div class="none">이 브라우저에는 남아 있는 기록이 없어요.<br>' +
+      '가계부를 쓰던 기기에서 이 주소를 열어 주세요.</div>';
+
+  var btn = document.getElementById('go');
+  var note = document.getElementById('note');
+  if (!keys.length) {
+    btn.textContent = '옮길 것이 없어요';
+    note.textContent = '평소 가계부를 보던 폰이나 컴퓨터에서, 그때 쓰던 브라우저로 이 주소를 열어 주세요.';
+    return;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '새 주소로 옮기기 →';
+  note.innerHTML = '누르면 <b>atrd.kr/bank</b> 로 넘어가면서 위 기록을 가져갑니다.<br>' +
+                   '여기 있는 기록은 그대로 두니 잘못돼도 다시 하면 됩니다.';
+
+  btn.onclick = function () {
+    var payload = encodeURIComponent(JSON.stringify(found));
+    location.href = 'https://atrd.kr/bank/#import=' + payload;
+  };
+})();
+</script>
+</body>
+</html>

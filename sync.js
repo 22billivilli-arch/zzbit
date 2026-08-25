@@ -128,6 +128,44 @@
     if (document.visibilityState === 'hidden' && Object.keys(pending).length) flush();
   });
 
+  // ── 예전 주소에서 넘어온 기록 받기 ────────────────────────
+  // move.html 이 주소 뒤에 #import=... 로 실어 보낸다.
+  // 주소의 # 뒤는 서버로 가지 않으므로 이 기기 안에서만 처리된다.
+  function takeImport() {
+    var h = location.hash || "";
+    if (h.indexOf("#import=") !== 0) return Promise.resolve(false);
+    var data;
+    try { data = JSON.parse(decodeURIComponent(h.slice(8))); }
+    catch (e) { alert("옮겨온 기록을 읽지 못했어요."); return Promise.resolve(false); }
+
+    var keys = Object.keys(data).filter(function (k) { return PREFIX.test(k); });
+    if (!keys.length) { history.replaceState(null, "", API + "/"); return Promise.resolve(false); }
+    if (!confirm('예전 가계부에서 ' + keys.length + '개를 가져옵니다.\n같은 달 기록이 있으면 덮어씁니다.')) {
+      history.replaceState(null, "", API + "/");
+      return Promise.resolve(false);
+    }
+
+    var body = {};
+    keys.forEach(function (k) { body[k] = tryParse(data[k]); safeSet(k, data[k]); });
+    mark("saving");
+    return post(body)
+      .then(function (r) {
+        if (!r.ok) throw new Error("서버 " + r.status);
+        lastSaved = new Date().toLocaleTimeString("ko-KR");
+        mark("saved");
+        history.replaceState(null, "", API + "/");
+        alert(keys.length + "개를 가져왔어요.");
+        return true;
+      })
+      .catch(function (e) {
+        keys.forEach(function (k) { pending[k] = tryParse(data[k]); });
+        schedule(1000);
+        alert('가져오긴 했는데 서버에 올리지 못했어요. 잠시 뒤 다시 보냅니다.\n(' + e + ')');
+        history.replaceState(null, "", API + "/");
+        return true;
+      });
+  }
+
   // ── 열 때 ─────────────────────────────────────────────────
   window.bankBoot = function () {
     return fetch(API + '/api/me', { credentials: 'same-origin', headers: headers() })
@@ -135,7 +173,9 @@
       .catch(function () { return { locked: false, ok: true }; })   // 서버가 안 되면 일단 진행
       .then(function (me) {
         if (me.locked && !me.ok) { showLogin(); return null; }
-        return bankPull();
+        return takeImport().then(function (imported) {
+          return imported ? true : bankPull();
+        });
       });
   };
 

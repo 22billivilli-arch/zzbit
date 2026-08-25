@@ -175,28 +175,36 @@ store['zzbit_yj_tx'] = JSON.stringify([
 while ($('yjMonth').textContent !== '2026년 8월') W.yjMove($('yjMonth').textContent > '2026년 8월' ? -1 : 1);
 W.yjRender();
 const cal = $('yjCal').innerHTML;
-const cells = cal.match(/<div class="yj-cd[^"]*"/g) || [];
-const pads = (cal.match(/yj-cd pad/g) || []).length;
+const cells = cal.match(/<div class="cell[^"]*"/g) || [];
+const pads = (cal.match(/cell pad/g) || []).length;
+// 날짜 칸 하나를 통째로 꺼내 본다
+const cell = d => {
+  const m = new RegExp('<div class="cell[^"]*"><span>' + d + '</span>(.*?)</div></div>').exec(cal);
+  return m ? m[1] : '';
+};
+const dotIn = d => cell(d).includes('var(--plus)');
+const dotFix = d => cell(d).includes('var(--minus)');
+const dotPocket = d => cell(d).includes('var(--olive)');
 
 check('칸 수가 7의 배수', cells.length % 7, 0);
 check('8월 날짜 31칸', cells.length - pads, 31);
-check('1일이 토요일 → 앞 빈칸 6개', (cal.split('<div class="yj-cd pad"></div>').length - 1) >= 6, true);
-check('1일 수입 +240만', /<span class="n">1<\/span><span class="i">\+240만<\/span>/.test(cal), true);
-check('1일 고정지출 −65만(초록)', /1<\/span><span class="i">\+240만<\/span><span class="f">−65만<\/span>/.test(cal), true);
-check('15일 용돈지출 −2.3만(파랑)', /<span class="n">15<\/span><span class="o">−2\.3만<\/span>/.test(cal), true);
-check('31일 고정지출 −8.9만(초록)', /<span class="n">31<\/span><span class="f">−8\.9만<\/span>/.test(cal), true);
-check('이동은 달력에 안 나온다 (20일 비어있음)', /<span class="n">20<\/span><\/div>/.test(cal), true);
-check('다음달 기록은 안 섞인다 (3일 비어있음)', /<span class="n">3<\/span><\/div>/.test(cal), true);
-check('수입은 빨강', /class="i"/.test(cal) && /--yj-in/.test(html), true);
-check('용돈지출은 파랑', /class="o"/.test(cal) && /--yj-out/.test(html), true);
-check('고정지출은 초록', /class="f"/.test(cal) && /--yj-fix/.test(html), true);
+check('1일이 토요일 → 앞 빈칸 6개', (cal.split('<div class="cell pad"></div>').length - 1) >= 6, true);
+check('1일에 입금 점', dotIn(1), true);
+check('1일에 고정 점', dotFix(1), true);
+check('15일에 용돈 점', dotPocket(15), true);
+check('31일에 고정 점', dotFix(31), true);
+check('이체는 달력에 안 나온다 (20일 점 없음)', cell(20).includes('<i'), false);
+check('다음달 기록은 안 섞인다 (3일 점 없음)', cell(3).includes('<i'), false);
+check('입금 점 색', /--plus/.test(cal), true);
+check('용돈 점 색', /--olive/.test(cal), true);
+check('고정 점 색', /--minus/.test(cal), true);
 
 W.yjMove(1);
 const cal9 = $('yjCal').innerHTML;
-check('9월로 넘기면 30칸', (cal9.match(/<div class="yj-cd[^"]*"/g) || []).length
-      - (cal9.match(/yj-cd pad/g) || []).length, 30);
-check('9월 3일 수입 +5만', /<span class="n">3<\/span><span class="i">\+5만<\/span>/.test(cal9), true);
-check('9월엔 8월 기록 없음', !/240만/.test(cal9), true);
+check('9월로 넘기면 30칸', (cal9.match(/<div class="cell[^"]*"/g) || []).length
+      - (cal9.match(/cell pad/g) || []).length, 30);
+check('9월 3일에 입금 점', /<div class="cell[^"]*"><span>3<\/span><div class="dots"><i style="background:var\(--plus\)/.test(cal9), true);
+check('9월엔 8월 기록 없음', (cal9.match(/<i /g) || []).length, 1);
 
 W.yjMove(-1);
 check('8월로 되돌아옴', $('yjMonth').textContent, '2026년 8월');
@@ -204,20 +212,20 @@ check('8월로 되돌아옴', $('yjMonth').textContent, '2026년 8월');
 console.log('\n⑯ 화살표 → 이체 창');
 store['zzbit_yj_tx'] = '[]';
 W.yjRender();
-$('yjMoveModal').style.display = 'none';
+$('yjMoveModal').hidden = true;
 W.yjToggleMove('kt');
-check('누르면 이체 창이 뜬다', $('yjMoveModal').style.display, 'flex');
+check('누르면 이체 창이 뜬다', $('yjMoveModal').hidden, false);
 check('지금 케뱅 잔액을 알려준다', /케이뱅크/.test($('yjMoveBal').textContent), true);
 check('금액칸은 비어서 시작', $('yjMoveAmt').value, '');
 W.yjMoveClose();
-check('취소하면 닫힌다', $('yjMoveModal').style.display, 'none');
+check('취소하면 닫힌다', $('yjMoveModal').hidden, true);
 
 W.yjToggleMove('kt');
 $('yjMoveAmt').value = '80000';
 W.yjDoMove();
 check('이체하면 케뱅에서 빠지고', bal().k, SK - 80000);
 check('토스로 들어온다', bal().t, ST + 80000);
-check('이체 뒤 창이 닫힌다', $('yjMoveModal').style.display, 'none');
+check('이체 뒤 창이 닫힌다', $('yjMoveModal').hidden, true);
 check('금액칸이 비워진다', $('yjMoveAmt').value, '');
 
 console.log('\n⑰ 잔액은 무슨 일이 있어도 먼저 그려진다');
@@ -247,7 +255,7 @@ check('금액도 그대로', rec.amt, 12000);
 addMemo('out', '용돈', 5000, '2026-08-11');
 rec = JSON.parse(store['zzbit_yj_tx'])[1];
 check('안 써도 저장된다', rec.memo, '');
-check('빈 내용은 점을 안 붙인다', ($('yjList').innerHTML.match(/·/g) || []).length, 1);
+check('빈 내용은 점을 안 붙인다', ($('yjList').innerHTML.match(/· /g) || []).length, 1);
 
 check('추가 뒤 내용칸이 비워진다', $('yjMemo').value, '');
 
@@ -270,7 +278,7 @@ store['zzbit_yj_tx'] = JSON.stringify([
 W.yjRender();
 check('잔액이 계산된다', bal().k, SK + 1000000);
 check('토스도 계산된다', bal().t, ST - 7000);
-check('내역이 그려진다', ($('yjList').innerHTML.match(/lg-inc/g) || []).length >= 2, true);
+check('내역이 그려진다', ($('yjList').innerHTML.match(/class="row"/g) || []).length >= 2, true);
 check('없는 내용 때문에 깨지지 않는다', /undefined/.test($('yjList').innerHTML), false);
 
 console.log('\n㉒ 통장 고르기');

@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>비트코인 자산 현황</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#e8e8e8;--card:#f5f5f5;--bg2:#e3e3e3;--border:#d4c9b0;
+    --accent:#f7931a;--green:#2a9d5c;--red:#e84040;
+    --text:#2a2010;--sub:#8a7a60;
+    --mono:'Space Mono',monospace;--sans:'Noto Sans KR',sans-serif;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);
+    min-height:100vh;padding:24px 16px 60px;max-width:480px;margin:0 auto}
+
+  /* 종이 질감 배경 */
+  body::before{content:'';position:fixed;inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23f5f0e8'/%3E%3Ccircle cx='1' cy='1' r='0.5' fill='%23e8e0d0' opacity='0.4'/%3E%3C/svg%3E");
+    pointer-events:none;z-index:0}
+
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;position:relative;z-index:1}
+  .header-left{display:flex;align-items:center;gap:11px}
+  .btc-icon{width:38px;height:38px;border:2.5px solid var(--text);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;
+    background:var(--card);box-shadow:2px 2px 0 var(--text)}
+  .header-title{font-size:16px;font-weight:700;color:var(--text)}
+  .header-sub{font-size:11px;color:var(--sub);font-family:var(--mono);margin-top:2px}
+  .refresh-btn{background:var(--card);border:2px solid var(--text);border-radius:8px;
+    padding:7px 13px;color:var(--text);font-size:12px;font-family:var(--mono);
+    cursor:pointer;display:flex;align-items:center;gap:5px;
+    box-shadow:2px 2px 0 var(--text);transition:all .1s}
+  .refresh-btn:active{transform:translate(2px,2px);box-shadow:none}
+  .refresh-btn.spin svg{animation:rot .7s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+
+  /* 시각화 카드 */
+  .viz-card{background:var(--card);border:2.5px solid var(--text);border-radius:16px;
+    margin-bottom:14px;overflow:hidden;box-shadow:4px 4px 0 var(--text);
+    position:relative;z-index:1}
+  .room-scene{width:100%;display:block;vertical-align:bottom}
+
+  /* 아이템 로그 */
+  .item-log{padding:10px 14px;background:var(--bg2);border-top:2px solid var(--text);
+    display:flex;flex-wrap:wrap;gap:6px;min-height:40px;align-items:center}
+  .item-tag{font-size:12px;background:var(--card);border:1.5px solid var(--text);
+    border-radius:20px;padding:3px 10px;display:flex;align-items:center;gap:4px;
+    box-shadow:1px 1px 0 var(--text)}
+  .item-empty{font-size:11px;color:var(--sub);font-family:var(--mono)}
+
+  /* 배너 */
+  .pnl-banner{padding:16px 18px;display:flex;align-items:center;
+    justify-content:space-between;background:var(--card);border-top:2px solid var(--border)}
+  .pnl-label{font-size:10px;letter-spacing:1.5px;color:var(--sub);margin-bottom:5px;text-transform:uppercase;font-family:var(--mono)}
+  .pnl-big{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:-1px;line-height:1}
+  .pnl-pct{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1}
+  .pnl-sub{font-size:11px;color:var(--sub);margin-top:5px;font-family:var(--mono)}
+
+  /* 지분 */
+  .sec-title{font-size:11px;letter-spacing:1.8px;text-transform:uppercase;
+    color:var(--sub);margin-bottom:12px;display:flex;align-items:center;gap:8px;
+    position:relative;z-index:1}
+  .sec-title::after{content:'';flex:1;height:2px;background:var(--border);
+    border-radius:2px;background-image:repeating-linear-gradient(90deg,var(--border) 0,var(--border) 6px,transparent 6px,transparent 10px)}
+
+  .person-card{background:var(--card);border:2.5px solid var(--text);
+    border-radius:16px;padding:18px;margin-bottom:12px;position:relative;z-index:1;
+    box-shadow:3px 3px 0 var(--text)}
+  .person-card.yejin{border-color:#7c3aed}
+  .person-card.yeho{border-color:#c2410c}
+  .person-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .person-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--text);
+    display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;
+    box-shadow:2px 2px 0 var(--text)}
+  .avatar-yejin{background:#ede9fe;color:#7c3aed}
+  .avatar-yeho{background:#fff7ed;color:#c2410c}
+  .person-name{font-size:15px;font-weight:700}
+  .person-share{font-size:11px;color:var(--sub);font-family:var(--mono);margin-top:2px}
+  .person-badge{margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:700;
+    padding:4px 10px;border-radius:20px;border:2px solid var(--text);
+    box-shadow:1px 1px 0 var(--text)}
+  .badge.up{background:#dcfce7;color:#166534;border-color:#166534}
+  .badge.down{background:#dbeafe;color:#1e40af;border-color:#1e40af}
+  .badge.neu{background:var(--bg2);color:var(--sub);border-color:var(--border)}
+  .person-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .p-stat{background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px}
+  .ps-label{font-size:10px;color:var(--sub);letter-spacing:.5px;margin-bottom:4px}
+  .ps-val{font-family:var(--mono);font-size:13px;font-weight:700;line-height:1.3}
+  .extra-section{margin-top:10px;padding-top:10px;border-top:1.5px dashed var(--border)}
+  .extra-label{font-size:10px;letter-spacing:.8px;color:var(--sub);margin-bottom:8px}
+
+  /* 현재가 */
+  .price-card{background:var(--card);border:2.5px solid var(--text);border-radius:16px;
+    padding:18px;margin-top:4px;position:relative;z-index:1;box-shadow:3px 3px 0 var(--text)}
+  .pc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .pc-label{font-size:11px;letter-spacing:1.5px;color:var(--sub);font-family:var(--mono)}
+  .pc-price{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--text);letter-spacing:-1px}
+  .pc-sub{font-family:var(--mono);font-size:12px;color:var(--sub);margin:4px 0 12px}
+  .pc-row{display:flex;gap:16px;flex-wrap:wrap;padding-top:10px;
+    border-top:1.5px dashed var(--border)}
+  .pc-stat-label{font-size:10px;color:var(--sub);letter-spacing:.5px;margin-bottom:3px}
+  .pc-stat-val{font-family:var(--mono);font-size:11px;color:var(--text)}
+  .live-row{display:flex;align-items:center;gap:7px;margin-top:10px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+    border:1.5px solid var(--text);animation:bl 1.6s infinite;flex-shrink:0}
+  @keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
+  .live-txt{font-size:11px;color:var(--sub);font-family:var(--mono)}
+  .err{background:#fff0f0;border:2px solid var(--red);border-radius:10px;
+    padding:12px;font-size:13px;color:var(--red);text-align:center;
+    margin-bottom:14px;display:none;box-shadow:2px 2px 0 var(--red)}
+
+  .cg{color:var(--green)}.cr{color:var(--red)}.ca{color:var(--accent)}.cv{color:#7c3aed}
+
+  /* 코인비 */
+  .coin-rain{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden}
+  .coin{position:absolute;top:-30px;font-size:20px;animation:fall linear infinite}
+  @keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:0}}
+  /* ── 탭 네비 ── */
+  .tabbar{display:flex;gap:8px;margin-bottom:16px;position:relative;z-index:1}
+  .tabbar button{flex:1;background:var(--card);border:2.5px solid var(--text);border-radius:10px;
+    padding:11px;font-size:13px;font-weight:700;font-family:var(--sans);color:var(--sub);
+    cursor:pointer;box-shadow:2px 2px 0 var(--text);transition:all .1s}
+  .tabbar button.on{background:var(--accent);color:#fff}
+  .tabbar button:active{transform:translate(2px,2px);box-shadow:none}
+  /* ── 제호 가계부 ── */
+  .lg-monthbar{display:flex;align-items:center;justify-content:space-between;background:var(--card);
+    border:2.5px solid var(--text);border-radius:12px;padding:8px 10px;margin-bottom:14px;
+    box-shadow:3px 3px 0 var(--text);position:relative;z-index:1}
+  .lg-monthbar button{background:var(--bg2);border:2px solid var(--text);border-radius:8px;width:40px;height:36px;
+    font-size:18px;font-weight:700;cursor:pointer;box-shadow:1px 1px 0 var(--text)}
+  .lg-monthbar button:active{transform:translate(1px,1px);box-shadow:none}
+  .lg-month{font-size:16px;font-weight:700;font-family:var(--mono)}
+  .lg-card{background:var(--card);border:2.5px solid var(--text);border-radius:14px;padding:14px;
+    margin-bottom:14px;box-shadow:4px 4px 0 var(--text);position:relative;z-index:1}
+  .lg-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px}
+  .lg-row.small{font-size:12px;color:var(--sub);padding:3px 0}
+  .lg-row b{font-family:var(--mono)}
+  .lg-balance{margin:12px 0 4px;padding:15px;background:var(--bg2);border:2px dashed var(--text);border-radius:12px;text-align:center}
+  .lg-bal-label{font-size:12px;color:var(--sub);margin-bottom:5px}
+  .lg-bal-big{font-size:30px;font-weight:700;font-family:var(--mono);color:var(--green)}
+  .lg-bal-big.neg{color:var(--red)}
+  .lg-bal-sub{font-size:12px;color:var(--sub);font-family:var(--mono);margin-top:3px}
+  .lg-inputrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .lg-inputrow input{border:2px solid var(--text);border-radius:8px;padding:9px;font-size:13px;font-family:var(--sans);background:#fff;color:var(--text)}
+  .lg-inputrow input#lgIncDate{flex:1 1 130px}
+  .lg-inputrow input#lgIncAmt{flex:1 1 100px}
+  .lg-inputrow input#lgIncMemo{flex:2 1 100px}
+  .lg-inputrow button{background:var(--accent);color:#fff;border:2px solid var(--text);border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;box-shadow:2px 2px 0 var(--text)}
+  .lg-inc{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1.5px solid var(--border);font-size:13px}
+  .lg-inc .d{color:var(--sub);font-family:var(--mono);font-size:12px}
+  .lg-inc .a{font-family:var(--mono);font-weight:700}
+  .lg-inc .x{color:var(--red);cursor:pointer;font-weight:700;padding:0 5px}
+  .lg-inc-total{display:flex;justify-content:space-between;padding-top:9px;margin-top:4px;border-top:2px solid var(--text);font-weight:700;font-size:14px;font-family:var(--mono)}
+  /* ── 예진 가계부 ── */
+  .yj{--yj:#7c3aed;--yj-in:#e84040;--yj-fix:#1f9254;--yj-out:#2f6fd0}
+  /* 수입 빨강 · 고정지출 초록 · 용돈지출 파랑 */
+  .tabbar button.on.yj-on{background:var(--yj)}
+  .yj-banks{display:flex;gap:6px;align-items:stretch;margin-bottom:10px;position:relative;z-index:1}
+  .yj-bank{flex:1;min-width:0;background:var(--bg2);border:2.5px solid var(--text);border-radius:12px;padding:11px 8px;text-align:center;box-shadow:3px 3px 0 var(--text)}
+  .yj-bank .nm{font-size:11px;letter-spacing:.5px;color:var(--sub);margin-bottom:4px;font-weight:700}
+  .yj-bank .bal{font-size:17px;font-weight:700;font-family:var(--mono);word-break:break-all;line-height:1.25}
+  .yj-bank .bal.neg{color:var(--red)}
+  .yj-bank.k{border-color:#3b5bdb}
+  .yj-bank.k .nm{color:#3b5bdb}
+  .yj-bank.t{border-color:#0064ff}
+  .yj-bank.t .nm{color:#0064ff}
+  /* 두 통장 사이의 화살표가 곧 이체 버튼이다 */
+  .yj-xfer{flex:0 0 54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    background:var(--card);border:2.5px solid var(--text);border-radius:12px;cursor:pointer;
+    box-shadow:3px 3px 0 var(--text);font-family:var(--sans);color:var(--text);padding:0}
+  .yj-xfer .ar{font-size:19px;font-family:var(--mono);line-height:1}
+  .yj-xfer .lb{font-size:9.5px;font-weight:700;line-height:1.15;color:var(--sub)}
+  .yj-xfer:active{transform:translate(3px,3px);box-shadow:none}
+  .yj-xfer.on{background:#0064ff;color:#fff}
+  .yj-xfer.on .lb{color:#fff}
+  .yj-xfer-line{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;font-size:14px;font-weight:700}
+  .yj-xfer-line .from{color:#3b5bdb}
+  .yj-xfer-line .to{color:#0064ff}
+  .yj-xfer-line .ar{font-family:var(--mono);color:var(--sub)}
+  .yj-xfer-bal{text-align:center;font-size:12px;color:var(--sub);font-family:var(--mono);margin-bottom:12px}
+  #yjMoveAmt{width:100%;border:2.5px solid var(--text);border-radius:10px;padding:11px;
+    font-size:15px;font-family:var(--sans);background:#fff;color:var(--text);text-align:center}
+  /* 모달 */
+  .yj-modal{position:fixed;inset:0;background:rgba(20,16,8,.55);z-index:50;
+    display:flex;align-items:center;justify-content:center;padding:18px}
+  .yj-modal-box{background:var(--card);border:3px solid var(--text);border-radius:16px;
+    padding:18px;width:100%;max-width:340px;box-shadow:6px 6px 0 var(--text)}
+  .yj-modal-title{font-size:15px;font-weight:700;margin-bottom:12px}
+  .yj-modal textarea{width:100%;border:2.5px solid var(--text);border-radius:10px;padding:10px;
+    font-size:14px;font-family:var(--sans);background:#fff;color:var(--text);resize:none;line-height:1.5}
+  .yj-modal-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px}
+  .yj-modal-count{font-size:11px;color:var(--sub);font-family:var(--mono)}
+  .yj-modal-btns{display:flex;gap:6px}
+  .yj-modal-btns button{border:2.5px solid var(--text);border-radius:10px;padding:9px 15px;
+    font-weight:700;font-size:13px;cursor:pointer;box-shadow:3px 3px 0 var(--text);font-family:var(--sans)}
+  .yj-modal-btns button:active{transform:translate(3px,3px);box-shadow:none}
+  .yj-modal-btns .cancel{background:var(--bg2);color:var(--text)}
+  .yj-modal-btns .save{background:var(--yj);color:#fff}
+  .yj-seg{display:flex;gap:6px;margin-bottom:8px}
+  .yj-seg button{flex:1;background:var(--card);border:2px solid var(--text);border-radius:8px;padding:9px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--sans);color:var(--text);box-shadow:2px 2px 0 var(--text)}
+  .yj-seg button.on{background:var(--yj-in);color:#fff}
+  .yj-seg button.on.out{background:var(--yj-out)}
+  .yj-seg button:active{transform:translate(2px,2px);box-shadow:none}
+  .yj-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .yj-sum .c{background:var(--bg2);border:2px solid var(--text);border-radius:10px;padding:10px}
+  .yj-sum .c .l{font-size:11px;color:var(--sub);margin-bottom:3px}
+  .yj-sum .c .v{font-size:16px;font-weight:700;font-family:var(--mono)}
+  .yj-sum .c.wide{grid-column:1/-1}
+  .yj-hint{font-size:11px;color:var(--sub);line-height:1.6;margin-top:8px}
+  .yj-tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:5px;border:1.5px solid var(--border);margin-right:5px;font-weight:700}
+  .yj-tag.in{color:var(--yj-in);border-color:var(--yj-in)}
+  .yj-tag.out{color:var(--yj-out);border-color:var(--yj-out)}
+  .yj-tag.fix{color:var(--yj-fix);border-color:var(--yj-fix)}
+  .yj-memo{color:var(--text);font-family:var(--sans);font-size:12.5px}
+  .yj-tag.mv{color:#0064ff;border-color:#0064ff}
+  #yjCat,#yjDate{border:2px solid var(--text);border-radius:8px;padding:9px;font-size:13px;font-family:var(--sans);background:#fff;color:var(--text)}
+  /* 달력 — 수입은 빨강(+), 지출은 파랑(−) */
+  .yj-cal-head,.yj-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .yj-cal-head{margin-bottom:5px}
+  .yj-cal-head span{text-align:center;font-size:11px;font-weight:700;color:var(--sub);font-family:var(--mono)}
+  .yj-cal-head span.sun{color:#e84040}
+  .yj-cal-head span.sat{color:#2f6fd0}
+  .yj-cd{min-height:62px;padding:4px 1px 5px;border-radius:7px;text-align:center;background:var(--bg2);border:1.5px solid transparent}
+  .yj-cd.pad{background:transparent}
+  .yj-cd.today{border-color:var(--text);background:#fff;box-shadow:2px 2px 0 var(--text)}
+  .yj-cd .n{display:block;font-size:11px;font-family:var(--mono);color:var(--sub);margin-bottom:2px}
+  .yj-cd.today .n{color:var(--text);font-weight:700}
+  .yj-cd .i,.yj-cd .f,.yj-cd .o{display:block;font-size:9.5px;font-family:var(--mono);font-weight:700;line-height:1.35;letter-spacing:-.3px}
+  .yj-cd .i{color:var(--yj-in)}
+  .yj-cd .f{color:var(--yj-fix)}
+  .yj-cd .o{color:var(--yj-out)}
+  .yj-callegend{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:var(--sub)}
+  .yj-callegend b{font-family:var(--mono)}
+  .lg-fx{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1.5px solid var(--border);cursor:pointer}
+  .lg-fx:first-child{border-top:none}
+  .lg-fx input[type=checkbox]{width:21px;height:21px;accent-color:var(--green);flex:0 0 auto}
+  .lg-fx .nm{flex:1;font-size:14px}
+  .lg-fx .nm small{color:var(--sub);font-size:11px;margin-left:5px;font-family:var(--mono)}
+  .lg-fx .am{font-family:var(--mono);font-weight:700;font-size:14px}
+  .lg-fx.paid .nm{text-decoration:line-through;color:var(--sub)}
+  .lg-fx-foot{display:flex;justify-content:space-between;padding-top:11px;margin-top:6px;border-top:2px solid var(--text);font-size:13px;font-family:var(--mono);font-weight:700}
+  .lg-inputrow input{box-sizing:border-box;min-width:0}
+  .lg-inputrow input#lgShinhan,.lg-inputrow input#lgLotte{flex:1 1 120px}
+  .lg-inputrow input#lgSpMemo{flex:2 1 110px}
+  .lg-inputrow input#lgSpAmt{flex:1 1 90px}
+  .lg-cardlbl{min-width:38px;font-size:13px;color:var(--sub);align-self:center;flex:0 0 auto}
+  .lg-savebtn{width:100%;background:var(--accent);color:#fff;border:2px solid var(--text);border-radius:8px;padding:11px;font-weight:700;cursor:pointer;box-shadow:2px 2px 0 var(--text);margin-top:2px}
+  .lg-savebtn:active{transform:translate(2px,2px);box-shadow:none}
+  .lg-fxrow{display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:8px 0;border-top:1.5px solid var(--border);font-size:14px}
+  .lg-fxrow:first-child{border-top:none}
+  .lg-fxrow small{color:var(--sub);font-size:11px;font-family:var(--mono)}
+  .lg-fxrow .am{font-family:var(--mono);font-weight:700;flex:0 0 auto;white-space:nowrap}
+
+  /* 서버 저장 — 로그인·저장 상태 */
+  .bank-login{position:fixed;inset:0;background:var(--bg);z-index:100;
+    display:flex;align-items:center;justify-content:center;padding:20px}
+  .bank-login-box{background:var(--card);border:3px solid var(--text);border-radius:16px;
+    padding:26px 22px;width:100%;max-width:300px;box-shadow:6px 6px 0 var(--text);text-align:center}
+  .bank-login-t{font-size:19px;font-weight:700;margin-bottom:16px}
+  .bank-login-box input{width:100%;border:2.5px solid var(--text);border-radius:10px;padding:11px;
+    font-size:15px;font-family:var(--sans);background:#fff;color:var(--text);text-align:center}
+  .bank-login-e{color:var(--red);font-size:12px;min-height:17px;margin:7px 0 3px}
+  .bank-login-box button{width:100%;background:var(--accent);color:#fff;border:2.5px solid var(--text);
+    border-radius:10px;padding:11px;font-weight:700;font-size:15px;cursor:pointer;
+    box-shadow:3px 3px 0 var(--text);font-family:var(--sans)}
+  .bank-login-box button:active{transform:translate(3px,3px);box-shadow:none}
+  .bank-sync{position:fixed;right:10px;bottom:10px;z-index:40;font-size:11px;
+    background:var(--card);border:2px solid var(--text);border-radius:8px;padding:4px 9px;
+    font-family:var(--mono);color:var(--sub);opacity:.85}
+  .bank-sync.on{color:var(--accent)}
+  .bank-sync.bad{color:var(--red);border-color:var(--red)}
+</style>
+</head>
+<body>
+<div class="coin-rain" id="coinRain"></div>
+
+<div class="header">
+  <div class="header-left">
+    <div class="btc-icon">₿</div>
+    <div>
+      <div class="header-title">비트코인 자산 현황</div>
+      <div class="header-sub" id="updatedAt">불러오는 중...</div>
+    </div>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" onclick="loadPrice()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M21 2v6h-6M3 12a9 9 0 0115-6.7L21 8M3 22v-6h6M21 12a9 9 0 01-15 6.7L3 16"/>
+    </svg>갱신
+  </button>
+</div>
+<div class="err" id="err"></div>
+
+<div class="tabbar">
+  <button id="tabbtn-asset" class="on" onclick="zzTab('asset')">₿ 자산</button>
+  <button id="tabbtn-ledger" onclick="zzTab('ledger')">📒 제호 가계부</button>
+  <button id="tabbtn-yejin" onclick="zzTab('yejin')">💗 예진 가계부</button>
+</div>
+
+<div id="tab-asset">
+<div class="viz-card" id="vizCard">
+  <div id="furnitureOverlay" style="position:absolute;inset:0;pointer-events:none;"></div>
+  <svg id="roomSvg" class="room-scene" viewBox="0 0 360 220"
+    xmlns="http://www.w3.org/2000/svg"
+    style="stroke-linecap:round;stroke-linejoin:round"><defs><clipPath id="faceClip"><ellipse cx="40" cy="45" rx="38" ry="42"/></clipPath></defs></svg>
+  <div class="item-log" id="itemLog">
+    <span class="item-empty">수익이 생기면 가구가 하나씩 생겨요 ✏️</span>
+  </div>
+  <div class="pnl-banner" id="pnlBanner">
+    <div>
+      <div class="pnl-label">공동 수익금</div>
+      <div class="pnl-big" id="bigPnl">—</div>
+    </div>
+    <div style="text-align:right">
+      <div class="pnl-label">수익률</div>
+      <div class="pnl-pct" id="bigPct">—</div>
+      <div class="pnl-sub" id="bigSub"></div>
+    </div>
+  </div>
+</div>
+
+<div class="sec-title">지분 현황</div>
+<div class="person-card yejin">
+  <div class="person-header">
+    <div class="person-avatar avatar-yejin">예</div>
+    <div><div class="person-name">예진</div><div class="person-share">0.00963728 BTC</div></div>
+    <div class="person-badge badge neu" id="yejinBadge">—</div>
+  </div>
+  <div class="person-grid">
+    <div class="p-stat"><div class="ps-label">평가액</div><div class="ps-val cv" id="yejinEval">—</div></div>
+    <div class="p-stat"><div class="ps-label">투자금</div><div class="ps-val">₩2,000,000</div></div>
+    <div class="p-stat"><div class="ps-label">수익금</div><div class="ps-val" id="yejinPnl">—</div></div>
+    <div class="p-stat"><div class="ps-label">수익률</div><div class="ps-val" id="yejinPct">—</div></div>
+  </div>
+</div>
+<div class="person-card yeho">
+  <div class="person-header">
+    <div class="person-avatar avatar-yeho">제</div>
+    <div><div class="person-name">제호</div><div class="person-share">0 BTC · 전액 출금</div></div>
+    <div class="person-badge badge neu" id="yehoBadge">—</div>
+  </div>
+  <div class="extra-label">▸ 공동분 · 투자금 ₩0</div>
+  <div class="person-grid">
+    <div class="p-stat"><div class="ps-label">평가액</div><div class="ps-val ca" id="yehoSharedEval">—</div></div>
+    <div class="p-stat"><div class="ps-label">수익금</div><div class="ps-val" id="yehoSharedPnl">—</div></div>
+  </div>
+  <div class="extra-section">
+    <div class="extra-label">▸ 개인 추가분 · 투자금 ₩0</div>
+    <div class="person-grid">
+      <div class="p-stat"><div class="ps-label">평가액</div><div class="ps-val ca" id="yehoExtraEval">—</div></div>
+      <div class="p-stat"><div class="ps-label">수익금</div><div class="ps-val" id="yehoExtraPnl">—</div></div>
+    </div>
+  </div>
+  <div class="extra-section">
+    <div class="extra-label">▸ 합산 · 투자금 ₩0</div>
+    <div class="person-grid">
+      <div class="p-stat"><div class="ps-label">총 평가액</div><div class="ps-val ca" id="yehoTotalEval">—</div></div>
+      <div class="p-stat"><div class="ps-label">총 수익금</div><div class="ps-val" id="yehoTotalPnl">—</div></div>
+      <div class="p-stat"><div class="ps-label">총 수익률</div><div class="ps-val" id="yehoTotalPct">—</div></div>
+      <div class="p-stat"><div class="ps-label">총 투자금</div><div class="ps-val">₩0</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="price-card">
+  <div class="pc-top">
+    <div class="pc-label">비트코인 · BTC/KRW · 업비트</div>
+    <div class="badge neu" id="chgBadge">—</div>
+  </div>
+  <div class="pc-price" id="priceKrw">—</div>
+  <div class="pc-sub" id="chgAmt"></div>
+  <div class="pc-row" id="priceRow"></div>
+  <div class="live-row"><div class="dot"></div><div class="live-txt" id="liveTxt">실시간 로딩 중</div></div>
+</div>
+</div><!-- /tab-asset -->
+
+<div id="tab-ledger" style="display:none">
+  <div class="lg-monthbar">
+    <button onclick="lgMove(-1)">‹</button>
+    <div class="lg-month" id="lgMonth">—</div>
+    <button onclick="lgMove(1)">›</button>
+  </div>
+  <div class="lg-card">
+    <div class="lg-row" onclick="lgToggleFx()" style="cursor:pointer"><span>고정지출 합계 <small id="lgFxCaret" style="color:var(--sub);font-family:var(--mono)">▾</small></span><b id="lgFixedSum" style="color:var(--red)">—</b></div>
+    <div id="lgFxList" style="display:none;padding:2px 0"></div>
+    <div class="lg-row"><span>신한카드</span><b id="lgShinhanV">₩0</b></div>
+    <div class="lg-row"><span>롯데카드</span><b id="lgLotteV">₩0</b></div>
+    <div class="lg-balance">
+      <div class="lg-bal-label">이번달 총 나갈돈 (고정 + 신한 + 롯데)</div>
+      <div class="lg-bal-big" id="lgOut" style="color:var(--red)">—</div>
+      <div class="lg-bal-sub" id="lgOutWon"></div>
+    </div>
+  </div>
+
+  <div class="sec-title">💳 이번달 카드값 입력</div>
+  <div class="lg-card">
+    <div class="lg-inputrow"><span class="lg-cardlbl">신한</span><input type="number" id="lgShinhan" placeholder="신한카드 금액(원)" inputmode="numeric"></div>
+    <div class="lg-inputrow"><span class="lg-cardlbl">롯데</span><input type="number" id="lgLotte" placeholder="롯데카드 금액(원)" inputmode="numeric"></div>
+    <button onclick="lgSaveCard()" class="lg-savebtn">저장</button>
+  </div>
+
+  <div class="sec-title">💸 이번달 용돈 (300,870원)</div>
+  <div class="lg-card">
+    <div class="lg-balance">
+      <div class="lg-bal-label">남은 용돈</div>
+      <div class="lg-bal-big" id="lgAllow">—</div>
+      <div class="lg-bal-sub" id="lgAllowSpent"></div>
+    </div>
+    <div class="lg-inputrow">
+      <input type="text" id="lgSpMemo" placeholder="내용 (예: 점심)">
+      <input type="number" id="lgSpAmt" placeholder="금액(원)" inputmode="numeric">
+      <button onclick="lgAddSpend()">추가</button>
+    </div>
+    <div id="lgSpList"></div>
+  </div>
+</div>
+
+<div id="tab-yejin" class="yj" style="display:none">
+  <div class="lg-monthbar">
+    <button onclick="yjMove(-1)">‹</button>
+    <div class="lg-month" id="yjMonth">—</div>
+    <button onclick="yjMove(1)">›</button>
+  </div>
+
+  <div class="sec-title">🏦 통장 잔액</div>
+  <div class="yj-banks">
+    <div class="yj-bank k">
+      <div class="nm">케이뱅크</div>
+      <div class="bal" id="yjKbank">₩0</div>
+    </div>
+    <button class="yj-xfer" id="yjXferBtn" onclick="yjToggleMove()" title="케이뱅크에서 토스뱅크로 용돈 이체">
+      <span class="ar">→</span><span class="lb">용돈<br>이체</span>
+    </button>
+    <div class="yj-bank t">
+      <div class="nm">토스뱅크</div>
+      <div class="bal" id="yjToss">₩0</div>
+    </div>
+  </div>
+
+  <div class="sec-title">✏️ 기록하기</div>
+  <div class="lg-card">
+    <div class="yj-seg">
+      <button id="yjSegIn" class="on" onclick="yjSetType('in')">＋ 수입</button>
+      <button id="yjSegOut" onclick="yjSetType('out')">− 지출</button>
+    </div>
+    <div class="lg-inputrow">
+      <input type="date" id="yjDate" style="flex:1 1 132px">
+      <select id="yjCat" style="flex:1 1 116px" onchange="yjHintNow()"></select>
+    </div>
+    <div class="lg-inputrow">
+      <input type="number" id="yjAmt" placeholder="금액(원)" inputmode="numeric" style="flex:1 1 108px">
+      <input type="text" id="yjMemo" placeholder="내용 (안 써도 돼요)" maxlength="30" style="flex:2 1 140px">
+      <button onclick="yjAdd()">추가</button>
+    </div>
+    <div class="yj-hint" id="yjRuleHint"></div>
+  </div>
+
+  <div class="sec-title">📊 이번달 합계</div>
+  <div class="lg-card">
+    <div class="yj-sum">
+      <div class="c"><div class="l">총수입</div><div class="v" id="yjSumIn" style="color:var(--yj-in)">₩0</div></div>
+      <div class="c"><div class="l">용돈 지출</div><div class="v" id="yjSumAllow" style="color:var(--yj-out)">₩0</div></div>
+      <div class="c"><div class="l">고정지출</div><div class="v" id="yjSumFixed" style="color:var(--yj-fix)">₩0</div></div>
+      <div class="c"><div class="l">지출 합계</div><div class="v" id="yjSumOut" style="color:var(--yj-out)">₩0</div></div>
+      <div class="c wide"><div class="l">이번달 남은 돈 (수입 − 지출)</div><div class="v" id="yjSumNet">₩0</div></div>
+    </div>
+  </div>
+
+  <div class="sec-title">📅 달력</div>
+  <div class="lg-card">
+    <div class="yj-cal-head">
+      <span class="sun">일</span><span>월</span><span>화</span><span>수</span>
+      <span>목</span><span>금</span><span class="sat">토</span>
+    </div>
+    <div class="yj-cal-grid" id="yjCal"></div>
+    <div class="yj-callegend">
+      <span><b style="color:var(--yj-in)">+</b> 수입</span>
+      <span><b style="color:var(--yj-fix)">−</b> 고정지출</span>
+      <span><b style="color:var(--yj-out)">−</b> 용돈</span>
+    </div>
+  </div>
+
+  <div class="sec-title">📋 이번달 내역</div>
+  <div class="lg-card">
+    <div id="yjList"></div>
+  </div>
+
+  <div class="yj-modal" id="yjMoveModal" style="display:none">
+    <div class="yj-modal-box">
+      <div class="yj-modal-title">용돈 이체</div>
+      <div class="yj-xfer-line">
+        <span class="from">케이뱅크</span>
+        <span class="ar">→</span>
+        <span class="to">토스뱅크</span>
+      </div>
+      <div class="yj-xfer-bal" id="yjMoveBal"></div>
+      <input type="number" id="yjMoveAmt" placeholder="이체할 금액(원)" inputmode="numeric">
+      <div class="yj-modal-foot">
+        <span class="yj-modal-count"></span>
+        <div class="yj-modal-btns">
+          <button class="cancel" onclick="yjMoveClose()">취소</button>
+          <button class="save" style="background:#0064ff" onclick="yjDoMove()">이체</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ASSETS = {"yejin_full": "/bank/img/a_yejin_full.png", "yeho_full": "/bank/img/a_yeho_full.png", "yejin_cry": "/bank/img/a_yejin_cry.png", "yejin_sweat": "/bank/img/a_yejin_sweat.png", "yejin_neutral": "/bank/img/a_yejin_neutral.png", "yejin_smile": "/bank/img/a_yejin_smile.png", "yejin_crown": "/bank/img/a_yejin_crown.png", "yejin_heart": "/bank/img/a_yejin_heart.png", "yeho_cry": "/bank/img/a_yeho_cry.png", "yeho_sweat": "/bank/img/a_yeho_sweat.png", "yeho_neutral": "/bank/img/a_yeho_neutral.png", "yeho_smile": "/bank/img/a_yeho_smile.png", "yeho_crown": "/bank/img/a_yeho_crown.png", "yeho_heart": "/bank/img/a_yeho_heart.png", "furni_ramen": "/bank/img/a_furni_ramen.png", "furni_blanket": "/bank/img/a_furni_blanket.png", "furni_plant": "/bank/img/a_furni_plant.png", "furni_shelf": "/bank/img/a_furni_shelf.png", "furni_tv": "/bank/img/a_furni_tv.png", "furni_bed": "/bank/img/a_furni_bed.png", "furni_bookcase": "/bank/img/a_furni_bookcase.png", "furni_coffee": "/bank/img/a_furni_coffee.png", "furni_sofa": "/bank/img/a_furni_sofa.png", "furni_desk": "/bank/img/a_furni_desk.png", "furni_aircon": "/bank/img/a_furni_aircon.png", "furni_dog": "/bank/img/a_furni_dog.png", "furni_piano": "/bank/img/a_furni_piano.png", "furni_cat": "/bank/img/a_furni_cat.png", "furni_aquarium": "/bank/img/a_furni_aquarium.png", "furni_hometheater": "/bank/img/a_furni_hometheater.png", "furni_chandelier": "/bank/img/a_furni_chandelier.png"};
+</script>
+<script>
+const SCENES = {
+  scene_cry:     '/bank/img/cry.png',
+  scene_sweat:   '/bank/img/sweat.png',
+  scene_neutral: '/bank/img/neutral.png',
+  scene_smile:   '/bank/img/smile.png',
+  scene_crown:   '/bank/img/crown.png',
+  scene_heart:   '/bank/img/heart.png',
+};
+</script>
+<script>
+/* 매수 내역 — 108,371,000원에 1,044,402원어치 (= 0.00963728 BTC)
+   제호는 전부 뺐으므로 남은 것은 모두 예진 몫이다. */
+const BUY_PRICE=108_371_000, BUY_AMOUNT=1_044_402;
+const YEJIN_QTY=0.00963728, YEJIN_COST=2_000_000;   /* 예진이 넣은 돈 */
+const YEHO_QTY=0,           YEHO_COST=0;            /* 제호 — 다 뺐다 */
+const YEHO_EXTRA_QTY=0,     YEHO_EXTRA_COST=0;
+const YEHO_TOTAL_QTY=YEHO_QTY+YEHO_EXTRA_QTY, YEHO_TOTAL_COST=YEHO_COST+YEHO_EXTRA_COST;
+const JOINT_QTY=YEJIN_QTY+YEHO_QTY, JOINT_COST=YEJIN_COST+YEHO_COST;
+const HALF_QTY=YEJIN_QTY, HALF_COST=YEJIN_COST;     /* 화면의 '예진' 칸이 쓰는 값 */
+/* 투자금이 0이면 수익률을 낼 수 없다. 0으로 나누지 않게 막는다. */
+const pctOf=(pnl,cost)=>cost>0?(pnl/cost)*100:0;
+let curKrw=null;
+let lastFCount=0;
+const fk=n=>'₩'+Math.round(n).toLocaleString('ko-KR');
+const fp=n=>(n>=0?'+':'')+n.toFixed(2)+'%';
+const fsign=n=>(n>=0?'+':'-')+fk(Math.abs(n));
+
+/* ── 드로잉 스타일 공통 속성 */
+const SW = 'stroke="#2a2010" fill="none" stroke-linecap="round" stroke-linejoin="round"';
+const SF = (fill) => `stroke="#2a2010" fill="${fill}" stroke-linecap="round" stroke-linejoin="round"`;
+
+/* ══════════════════════════════════════════
+   가구 목록 — 나노바나나 이미지
+   ══════════════════════════════════════════ */
+const FURNITURE = [
+  { emoji:'🍜', name:'컵라면',    url:'/bank/img/item_ramen.png' },
+  { emoji:'🛏️', name:'이불',      url:'/bank/img/item_blanket.png' },
+  { emoji:'🪴', name:'화분',      url:'/bank/img/item_plant.png' },
+  { emoji:'📚', name:'책 선반',   url:'/bank/img/item_shelf.png' },
+  { emoji:'📺', name:'TV',        url:'/bank/img/item_tv.png' },
+  { emoji:'🛏️', name:'이불멈',    url:'/bank/img/item_bed.png' },
+  { emoji:'📖', name:'책장',      url:'/bank/img/item_bookcase.png' },
+  { emoji:'☕', name:'커피머신',  url:'/bank/img/item_coffee.png' },
+  { emoji:'🛋️', name:'소파',      url:'/bank/img/item_sofa.png' },
+  { emoji:'💻', name:'책상',      url:'/bank/img/item_desk.png' },
+  { emoji:'❄️', name:'에어컨',    url:'/bank/img/item_aircon.png' },
+  { emoji:'🐶', name:'강아지',    url:'/bank/img/item_dog.png' },
+  { emoji:'🎹', name:'피아노',    url:'/bank/img/item_piano.png' },
+  { emoji:'🐱', name:'고양이',    url:'/bank/img/item_cat.png' },
+  { emoji:'🐠', name:'수족관',    url:'/bank/img/item_aquarium.png' },
+  { emoji:'🎬', name:'홈시어터',  url:'/bank/img/item_hometheater.png' },
+  { emoji:'💎', name:'샹들리에',  url:'/bank/img/item_chandelier.png' },
+];
+
+function getFurnitureCount(pnlWon) {
+  if (pnlWon <= 0) return 0;
+  return Math.min(Math.floor(pnlWon / 10000), FURNITURE.length);
+}
+
+function getLevel(pct) {
+  if (pct >= 20) return 5;
+  if (pct >= 10) return 4;
+  if (pct >=  3) return 3;
+  if (pct >=  0) return 2;
+  if (pct >= -5) return 1;
+  return 0;
+}
+
+/* ══ 드로잉 방 배경 ══ */
+function getRoomBg(level) {
+  const W=360, H=220;
+  const floor = `<rect x="20" y="175" width="320" height="25" rx="3" ${SF('#f0ebe0')} stroke-width="2"/>
+    <line x1="20" y1="175" x2="340" y2="175" stroke="#2a2010" stroke-width="2.5"/>`;
+  const wall  = `<rect x="20" y="20" width="320" height="158" rx="6" ${SF('#e3e3e3')} stroke-width="2.5"/>`;
+
+  if (level === 0) return `
+    ${wall}
+    <!-- 구멍들 (삐뚤빠뚤하게) -->
+    <path d="M50 45 Q58 38 70 44 Q75 52 65 58 Q54 56 50 45Z" ${SF('#d4c9b0')} stroke-width="2" stroke-dasharray="3,2"/>
+    <path d="M280 55 Q290 46 302 52 Q306 62 296 66 Q283 63 280 55Z" ${SF('#d4c9b0')} stroke-width="2" stroke-dasharray="3,2"/>
+    <path d="M165 25 Q178 18 192 24 Q196 32 185 36 Q170 34 165 25Z" ${SF('#d4c9b0')} stroke-width="2" stroke-dasharray="3,2"/>
+    <!-- 균열선 -->
+    <path d="M46 42 L38 32 M70 44 L78 36" stroke="#2a2010" stroke-width="1.5" fill="none" stroke-dasharray="2,2" opacity="0.5"/>
+    <path d="M278 52 L270 44" stroke="#2a2010" stroke-width="1.5" fill="none" stroke-dasharray="2,2" opacity="0.5"/>
+    <!-- 부서진 창문 -->
+    <rect x="230" y="40" width="70" height="55" rx="4" ${SF('#e8f4f8')} stroke-width="2" stroke-dasharray="4,2"/>
+    <line x1="265" y1="40" x2="265" y2="95" stroke="#2a2010" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <line x1="230" y1="67" x2="300" y2="67" stroke="#2a2010" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <path d="M240 44 L233 37" stroke="#2a2010" stroke-width="2" fill="none"/>
+    <path d="M258 42 L254 36" stroke="#2a2010" stroke-width="2" fill="none"/>
+    <!-- 빗물 (구멍에서 떨어지는) -->
+    <path d="M58 56 Q56 70 58 82" stroke="#93c5fd" stroke-width="2" fill="none" stroke-dasharray="4,4" opacity="0.7"/>
+    <!-- 슬픈 표정 -->
+    <text x="155" y="160" font-size="18" text-anchor="middle" opacity="0.4">💸</text>
+    ${floor}`;
+
+  if (level === 1) return `
+    ${wall}
+    <!-- 판자로 막은 구멍 -->
+    <rect x="44" y="42" width="44" height="30" rx="2" ${SF('#fde68a')} stroke-width="2"/>
+    <line x1="44" y1="52" x2="88" y2="52" stroke="#2a2010" stroke-width="1.5"/>
+    <line x1="44" y1="62" x2="88" y2="62" stroke="#2a2010" stroke-width="1.5"/>
+    <circle cx="48" cy="48" r="2.5" ${SF('#d4c9b0')} stroke-width="1.5"/>
+    <circle cx="84" cy="48" r="2.5" ${SF('#d4c9b0')} stroke-width="1.5"/>
+    <circle cx="48" cy="68" r="2.5" ${SF('#d4c9b0')} stroke-width="1.5"/>
+    <circle cx="84" cy="68" r="2.5" ${SF('#d4c9b0')} stroke-width="1.5"/>
+    <!-- 작은 창문 (밤하늘) -->
+    <rect x="234" y="38" width="68" height="54" rx="4" ${SF('#1e3a5f')} stroke-width="2.5"/>
+    <line x1="268" y1="38" x2="268" y2="92" stroke="#2a2010" stroke-width="1.8"/>
+    <line x1="234" y1="65" x2="302" y2="65" stroke="#2a2010" stroke-width="1.8"/>
+    <!-- 별 -->
+    <text x="250" y="56" font-size="8">★</text>
+    <text x="280" y="52" font-size="6">★</text>
+    <text x="244" y="80" font-size="7">★</text>
+    <text x="278" y="78" font-size="5">★</text>
+    ${floor}`;
+
+  if (level === 2) return `
+    ${wall}
+    <!-- 단칸방 창문 (낮) -->
+    <rect x="234" y="34" width="70" height="60" rx="4" ${SF('#dbeafe')} stroke-width="2.5"/>
+    <line x1="269" y1="34" x2="269" y2="94" stroke="#2a2010" stroke-width="1.8"/>
+    <line x1="234" y1="64" x2="304" y2="64" stroke="#2a2010" stroke-width="1.8"/>
+    <!-- 햇살 -->
+    <circle cx="252" cy="50" r="9" ${SF('#fde68a')} stroke-width="1.8"/>
+    <line x1="252" y1="38" x2="252" y2="34" stroke="#fde68a" stroke-width="1.5"/>
+    <line x1="244" y1="42" x2="241" y2="39" stroke="#fde68a" stroke-width="1.5"/>
+    <line x1="260" y1="42" x2="263" y2="39" stroke="#fde68a" stroke-width="1.5"/>
+    ${floor}`;
+
+  if (level === 3) return `
+    ${wall}
+    <!-- 원룸 창문 (밝은 낮) -->
+    <rect x="222" y="28" width="86" height="72" rx="5" ${SF('#bfdbfe')} stroke-width="2.5"/>
+    <line x1="265" y1="28" x2="265" y2="100" stroke="#2a2010" stroke-width="1.8"/>
+    <line x1="222" y1="64" x2="308" y2="64" stroke="#2a2010" stroke-width="1.8"/>
+    <circle cx="246" cy="46" r="12" ${SF('#fde68a')} stroke-width="2"/>
+    <ellipse cx="282" cy="42" rx="14" ry="8" ${SF('white')} stroke-width="1.5" opacity="0.7"/>
+    <!-- 커튼 (손그림) -->
+    <path d="M220 26 Q208 60 220 102" stroke="#2a2010" stroke-width="7" fill="none"/>
+    <path d="M310 26 Q322 60 310 102" stroke="#2a2010" stroke-width="7" fill="none"/>
+    <!-- 벽지 점 패턴 -->
+    ${Array.from({length:12},(_,i)=>`<circle cx="${50+i%6*46}" cy="${50+Math.floor(i/6)*60}" r="2" fill="#d4c9b0" opacity="0.5"/>`).join('')}
+    ${floor}`;
+
+  if (level === 4) return `
+    ${wall}
+    <!-- 세련된 집 큰 창문 -->
+    <rect x="210" y="24" width="108" height="88" rx="6" ${SF('#bfdbfe')} stroke-width="3"/>
+    <line x1="264" y1="24" x2="264" y2="112" stroke="#2a2010" stroke-width="2"/>
+    <line x1="210" y1="68" x2="318" y2="68" stroke="#2a2010" stroke-width="2"/>
+    <circle cx="238" cy="46" r="14" ${SF('#fde68a')} stroke-width="2"/>
+    <!-- 햇살 여러개 -->
+    ${[0,45,90,135,180,225,270,315].map(deg=>`<line x1="${238+14*Math.cos(deg*Math.PI/180)}" y1="${46+14*Math.sin(deg*Math.PI/180)}" x2="${238+20*Math.cos(deg*Math.PI/180)}" y2="${46+20*Math.sin(deg*Math.PI/180)}" stroke="#fde68a" stroke-width="1.5"/>`).join('')}
+    <ellipse cx="290" cy="40" rx="18" ry="9" ${SF('white')} stroke-width="1.5" opacity="0.7"/>
+    <ellipse cx="302" cy="55" rx="14" ry="7" ${SF('white')} stroke-width="1.5" opacity="0.5"/>
+    <!-- 고급 커튼 -->
+    <path d="M208 22 Q192 68 208 114" stroke="#2a2010" stroke-width="10" fill="none"/>
+    <path d="M320 22 Q336 68 320 114" stroke="#2a2010" stroke-width="10" fill="none"/>
+    <!-- 몰딩 -->
+    <rect x="20" y="20" width="320" height="8" rx="3" ${SF('#f0ebe0')} stroke-width="1.5"/>
+    ${floor}`;
+
+  // level 5: 우주집
+  return `
+    <!-- 우주 배경 -->
+    <rect x="20" y="20" width="320" height="180" rx="6" ${SF('#0a0a2e')} stroke-width="2.5"/>
+    <!-- 별들 손그림 스타일 -->
+    ${Array.from({length:35},(_,i)=>`<circle cx="${30+(i*67)%310}" cy="${25+(i*43)%160}" r="${i%5===0?2:1}" fill="white" opacity="${0.4+i%4*0.15}"/>`).join('')}
+    <!-- 행성 (손그림) -->
+    <circle cx="310" cy="50" r="26" ${SF('#4a3a8a')} stroke-width="2.5"/>
+    <path d="M284 52 Q310 38 336 52" stroke="#7a6aaa" stroke-width="3" fill="none"/>
+    <path d="M284 56 Q310 70 336 56" stroke="#7a6aaa" stroke-width="2" fill="none" opacity="0.5"/>
+    <!-- 지구 -->
+    <circle cx="42" cy="40" r="14" ${SF('#1a4a8a')} stroke-width="2"/>
+    <path d="M34 36 Q40 30 50 38 Q44 48 36 44 Z" ${SF('#2a6a2a')} stroke-width="1.5"/>
+    <!-- 유리돔 (손그림) -->
+    <path d="M65 175 Q65 55 180 50 Q295 55 295 175" ${SF('none')} stroke-width="3" stroke-dasharray="8,4"/>
+    <!-- 바닥 발광선 -->
+    <line x1="65" y1="175" x2="295" y2="175" stroke="#4a8af7" stroke-width="2" stroke-dasharray="4,3" opacity="0.7"/>
+    <!-- 달 -->
+    <path d="M160 30 Q172 25 178 35 Q170 44 158 40 Q152 34 160 30Z" ${SF('#fde68a')} stroke-width="2"/>`;
+}
+
+/* ══ 이미지 가구 배치 ══ */
+function getFurnitureSvg(count) {
+  if (!count) return '';
+  // SVG viewBox(360x220) → 실제 px 비율 계산은 renderFurnitureOverlay에서
+  // 가구 슬롯: 캐릭터(x:90~270) 피하고 좌우 + 상단 배치
+  const slots=[
+    [68,170],  // 왼쪽 바닥1
+    [292,170], // 오른쪽 바닥1
+    [68,138],  // 왼쪽 중간1
+    [292,138], // 오른쪽 중간1
+    [68,108],  // 왼쪽 상단1
+    [292,108], // 오른쪽 상단1
+    [90,170],  // 왼쪽 바닥2
+    [270,170], // 오른쪽 바닥2
+    [90,138],  // 왼쪽 중간2
+    [270,138], // 오른쪽 중간2
+    [90,108],  // 왼쪽 상단2
+    [270,108], // 오른쪽 상단2
+    [180,80],  // 상단 중앙
+    [130,80],  // 상단 좌
+    [230,80],  // 상단 우
+  ];
+  // HTML overlay에서 렌더 (renderFurnitureOverlay)
+  return ''; // SVG image 외부URL 차단 우회
+}
+
+/* ══ 이미지 캐릭터 ══ */
+function getFaceKey(pct, isYejin) {
+  const prefix = isYejin ? 'yejin' : 'yeho';
+  if (pct >= 20) return prefix + '_heart';
+  if (pct >= 10) return prefix + '_crown';
+  if (pct >=  3) return prefix + '_smile';
+  if (pct >=  0) return prefix + '_neutral';
+  if (pct >= -5) return prefix + '_sweat';
+  return prefix + '_cry';
+}
+
+function getChar(cx, cy, pct, isYejin, isWedding) {
+  const faceKey = getFaceKey(pct, isYejin);
+  const faceImg = ASSETS[faceKey] || '';
+  // 표정 이미지를 SVG foreignObject 또는 image 태그로
+  // 전체 캐릭터는 표정만 바꾸고 몸은 full 이미지에서 얼굴 부분 교체
+  // 여기선 표정 이미지를 얼굴 영역에 배치
+  const faceW = 80, faceH = 90;
+  const fx = cx - faceW/2;
+  const fy = cy - 55;
+
+  // 몸 SVG (간단하게 유지)
+  const bodyColor = isYejin ? '#ffb3c6' : '#a8d8f0';
+  const bodyDark  = isYejin ? '#ff85a1' : '#7abcd4';
+
+  const body = isWedding
+    ? (isYejin
+        ? `<path d="M${cx-10} ${cy+25} Q${cx-30} ${cy+38} ${cx-28} ${cy+60} L${cx+28} ${cy+60} Q${cx+30} ${cy+38} ${cx+10} ${cy+25} Z" fill="white" stroke="#ddd" stroke-width="1.5"/>`
+        : `<rect x="${cx-14}" y="${cy+22}" width="28" height="36" rx="4" fill="#1a1a2a" stroke="#333" stroke-width="1.5"/>
+           <path d="M${cx-8} ${cy+24} L${cx} ${cy+34} L${cx+8} ${cy+24}" fill="white"/>`)
+    : `<path d="M${cx-14} ${cy+22} Q${cx-22} ${cy+34} ${cx-20} ${cy+60} L${cx+20} ${cy+60} Q${cx+22} ${cy+34} ${cx+14} ${cy+22} Z" fill="${bodyColor}" stroke="${bodyDark}" stroke-width="2"/>`;
+
+  const arms = `
+    <path d="M${cx-18} ${cy+28} Q${cx-30} ${cy+38} ${cx-32} ${cy+48}" stroke="${bodyDark}" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="${cx-33}" cy="${cx > 180 ? cy+50 : cy+51}" r="6" fill="#ffe4c4" stroke="#e8c090" stroke-width="1.5"/>
+    <path d="M${cx+18} ${cy+28} Q${cx+30} ${cy+38} ${cx+32} ${cy+48}" stroke="${bodyDark}" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="${cx+33}" cy="${cy+51}" r="6" fill="#ffe4c4" stroke="#e8c090" stroke-width="1.5"/>`;
+
+  const legs = `
+    <rect x="${cx-16}" y="${cy+58}" width="12" height="16" rx="4" fill="${isYejin?'#ffb3c6':'#5a90c8'}" stroke="${bodyDark}" stroke-width="1.5"/>
+    <rect x="${cx+4}"  y="${cy+58}" width="12" height="16" rx="4" fill="${isYejin?'#ffb3c6':'#5a90c8'}" stroke="${bodyDark}" stroke-width="1.5"/>
+    <ellipse cx="${cx-10}" cy="${cy+76}" rx="10" ry="5" fill="white" stroke="#ddd" stroke-width="1.5"/>
+    <ellipse cx="${cx+10}" cy="${cy+76}" rx="10" ry="5" fill="white" stroke="#ddd" stroke-width="1.5"/>`;
+
+  return body + arms + legs +
+    `<image href="${faceImg}" x="${fx}" y="${fy}" width="${faceW}" height="${faceH}" clip-path="url(#faceClip)"/>`;
+}
+
+/* ══ 말풍선 (손그림) ══ */
+function getBubble(cx, by, pct) {
+  const msgs=['😭 살려줘!!','😟 힘들다...','🙂 괜찮아요','😄 수익중~!','🎉 부자됐다!','🚀 달나라!'];
+  const idx=pct>=20?5:pct>=10?4:pct>=3?3:pct>=0?2:pct>=-5?1:0;
+  // by = 말풍선 꼬리 끝 y 위치
+  // 말풍선 박스는 by 위로
+  const bh = 26, bw = 100;
+  const btop = by - bh - 12;  // 박스 상단
+  const bbot = by - 10;        // 꼬리 시작
+  return `
+    <rect x="${cx - bw/2}" y="${btop}" width="${bw}" height="${bh}" rx="13"
+      fill="white" stroke="#2a2010" stroke-width="2"/>
+    <polygon points="${cx-7},${bbot} ${cx+7},${bbot} ${cx},${by-2}"
+      fill="white" stroke="#2a2010" stroke-width="1.5" stroke-linejoin="round"/>
+    <polygon points="${cx-6},${bbot+1} ${cx+6},${bbot+1} ${cx},${by-4}"
+      fill="white"/>
+    <text x="${cx}" y="${btop + bh/2 + 5}" font-size="12" text-anchor="middle"
+      fill="#2a2010" font-family="sans-serif">${msgs[idx]}</text>`;
+}
+
+/* ══ 가구 HTML 오버레이 (SVG image 외부URL 차단 우회) ══ */
+function renderFurnitureOverlay(count) {
+  const wrap = document.getElementById('furnitureOverlay');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  if (!count) return;
+
+  // SVG viewBox 360x220 → 실제 렌더 사이즈 비율
+  const svg = document.getElementById('roomSvg');
+  const rect = svg.getBoundingClientRect();
+  const scaleX = rect.width / 360;
+  const scaleY = rect.height / 220;
+
+  // 방 구역: 왼쪽(x:28~88), 오른쪽(x:272~332), 중앙상단(x:130~230)
+  // 캐릭터 영역(x:95~265) 침범 안 함
+  // 각 아이템 고정 위치 — 겹침 없음
+  const itemLayout = [
+    { x: 55,  y: 185, w: 36, h: 36 }, // 1: 컵라면  — 왼쪽 바닥 앞
+    { x: 55,  y: 148, w: 42, h: 42 }, // 2: 이불    — 왼쪽 중간
+    { x: 55,  y: 108, w: 44, h: 44 }, // 3: 화분    — 왼쪽 상단
+    { x: 310, y: 108, w: 44, h: 44 }, // 4: 책장    — 오른쪽 상단
+    { x: 310, y: 148, w: 44, h: 44 }, // 5: TV      — 오른쪽 중간
+    { x: 310, y: 185, w: 40, h: 40 }, // 6: 침대    — 오른쪽 바닥 앞
+    { x: 180, y: 68,  w: 44, h: 44 }, // 7: 책장2   — 중앙 상단
+    { x: 80,  y: 185, w: 36, h: 36 }, // 8: 커피머신— 왼쪽 바닥 뒤
+    { x: 285, y: 185, w: 36, h: 36 }, // 9: 소파    — 오른쪽 바닥 뒤
+    { x: 80,  y: 148, w: 42, h: 42 }, // 10: 책상   — 왼쪽 중간 뒤
+    { x: 285, y: 148, w: 42, h: 42 }, // 11: 에어컨 — 오른쪽 중간 뒤
+    { x: 80,  y: 108, w: 44, h: 44 }, // 12: 강아지 — 왼쪽 상단 뒤
+    { x: 285, y: 108, w: 44, h: 44 }, // 13: 피아노 — 오른쪽 상단 뒤
+    { x: 130, y: 68,  w: 44, h: 44 }, // 14: 고양이 — 중앙상단 왼
+    { x: 230, y: 68,  w: 44, h: 44 }, // 15: 수족관 — 중앙상단 오
+    { x: 180, y: 108, w: 44, h: 44 }, // 16: 홈시어터— 중앙 중간
+    { x: 180, y: 148, w: 44, h: 44 }, // 17: 샹들리에— 중앙 하단
+  ];
+  const iw=58, ih=58; // fallback (안씀)
+
+  FURNITURE.slice(0, count).forEach((item, i) => {
+    const layout = itemLayout[i % itemLayout.length];
+    const x = (layout.x - layout.w/2) * scaleX;
+    const y = (layout.y - layout.h)   * scaleY;
+    const w = layout.w * scaleX;
+    const h = layout.h * scaleY;
+    const img = document.createElement('img');
+    img.src = item.url;
+    img.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;pointer-events:none;object-fit:contain;`;
+    wrap.appendChild(img);
+  });
+}
+
+/* ══ 메인 씬 ══ */
+function getSceneKey(pct) {
+  if (pct >= 20) return 'scene_heart';
+  if (pct >= 10) return 'scene_crown';
+  if (pct >=  3) return 'scene_smile';
+  if (pct >=  0) return 'scene_neutral';
+  if (pct >= -5) return 'scene_sweat';
+  return 'scene_cry';
+}
+
+function buildScene(pct, pnlWon) {
+  const svg    = document.getElementById('roomSvg');
+  const level  = getLevel(pct);
+  const fCount = getFurnitureCount(pnlWon);
+  const sceneKey = getSceneKey(pct);
+  const sceneImg = SCENES[sceneKey] || '';
+
+  // 방 배경 + 가구
+  const roomBg   = getRoomBg(level);
+  const furniture = getFurnitureSvg(fCount);
+
+  // 캐릭터 씬 이미지를 SVG 중앙 하단에 배치
+  // 캐릭터: 방 안 하단 중앙, 크기 줄여서 배치
+  const charW = 170, charH = 140;
+  const charX = (360 - charW) / 2;  // 중앙 정렬
+  const charY = 175 - charH;        // 바닥선에 발이 닿게 (y=35)
+
+  const sceneImgSvg = sceneImg
+    ? `<image href="${sceneImg}" x="${charX}" y="${charY}" width="${charW}" height="${charH}" preserveAspectRatio="xMidYMax meet" crossorigin="anonymous"/>`
+    : '';
+
+  // 말풍선 — 꼬리가 캐릭터 머리 위 (y=charY+20 = 55 부근)
+  const bubble = getBubble(180, charY + 22, pct);
+
+  svg.innerHTML = roomBg + furniture + sceneImgSvg + bubble;
+  // 가구 HTML 오버레이 업데이트
+  renderFurnitureOverlay(fCount);
+}
+
+/* ══ 아이템 로그 ══ */
+function updateItemLog(count, pnlWon) {
+  const log = document.getElementById('itemLog');
+  if (!count) {
+    const msg = pnlWon<=0 ? '수익이 나면 가구가 하나씩 생겨요 🛋️'
+      : `₩${(10000-pnlWon%10000).toLocaleString()} 더 수익나면 첫 가구!`;
+    log.style.display = 'flex';
+    log.innerHTML=`<span class="item-empty">${msg}</span>`; return;
+  }
+  log.style.display = 'flex';
+  const next = FURNITURE[count]?`<span class="item-empty" style="margin-left:auto;font-size:10px">다음: ${FURNITURE[count].emoji} +₩1만</span>`:'';
+  log.innerHTML = FURNITURE.slice(0,count).map(f=>`<span class="item-tag">${f.emoji} ${f.name}</span>`).join('')+next;
+}
+
+/* ══ 코인비 ══ */
+function startCoinRain(active) {
+  const rain=document.getElementById('coinRain');
+  rain.innerHTML='';
+  if (!active) return;
+  for(let i=0;i<15;i++){
+    const c=document.createElement('div');c.className='coin';
+    c.textContent=['₿','💰','🪙','✨'][Math.floor(Math.random()*4)];
+    c.style.left=Math.random()*100+'vw';
+    c.style.animationDuration=(2+Math.random()*3)+'s';
+    c.style.animationDelay=(Math.random()*3)+'s';
+    rain.appendChild(c);
+  }
+}
+
+async function loadPrice() {
+  const btn=document.getElementById('refreshBtn');btn.classList.add('spin');
+  document.getElementById('err').style.display='none';
+  try {
+    const res=await fetch('/bank/api/upbit',{credentials:'same-origin',headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const [t]=await res.json();curKrw=t.trade_price;
+    const chgPct=t.signed_change_rate*100,chgAmt=t.signed_change_price;
+    document.getElementById('priceKrw').textContent=fk(curKrw);
+    const cb=document.getElementById('chgBadge');
+    cb.textContent=fp(chgPct);cb.className='badge '+(chgPct>0?'up':chgPct<0?'down':'neu');
+    const ca=document.getElementById('chgAmt');
+    ca.textContent=(chgAmt>=0?'▲ +':'▼ ')+fk(Math.abs(chgAmt))+' (전일 대비)';
+    ca.style.color=chgPct>0?'var(--green)':chgPct<0?'var(--red)':'var(--sub)';
+    document.getElementById('priceRow').innerHTML=`
+      <div><div class="pc-stat-label">24H 고가</div><div class="pc-stat-val">${fk(t.high_price)}</div></div>
+      <div><div class="pc-stat-label">24H 저가</div><div class="pc-stat-val">${fk(t.low_price)}</div></div>
+      <div><div class="pc-stat-label">거래대금</div><div class="pc-stat-val">${(t.acc_trade_price_24h/1e8).toFixed(0)}억</div></div>`;
+    const now=new Date().toLocaleTimeString('ko-KR');
+    document.getElementById('updatedAt').textContent=now+' 업데이트';
+    document.getElementById('liveTxt').textContent='1분마다 자동 갱신 · 업비트';
+    renderAll();
+  } catch(e) {
+    document.getElementById('err').textContent='가격 로드 실패: '+e.message;
+    document.getElementById('err').style.display='block';
+    document.getElementById('updatedAt').textContent='로드 실패';
+  }
+  btn.classList.remove('spin');
+}
+
+function renderAll() {
+  if(!curKrw) return;
+  const jointEval=JOINT_QTY*curKrw,jointPnl=jointEval-JOINT_COST,jointPct=(jointPnl/JOINT_COST)*100;
+  const halfEval=HALF_QTY*curKrw,halfPnl=halfEval-HALF_COST,halfPct=pctOf(halfPnl,HALF_COST);
+  const extraEval=YEHO_EXTRA_QTY*curKrw,extraPnl=extraEval-YEHO_EXTRA_COST;
+  const yehoTotalEval=YEHO_TOTAL_QTY*curKrw,yehoTotalPnl=yehoTotalEval-YEHO_TOTAL_COST;
+  const yehoTotalPct=pctOf(yehoTotalPnl,YEHO_TOTAL_COST);
+  const pnlWon=Math.round(jointPnl);
+  const fCount=getFurnitureCount(pnlWon);
+
+  lastFCount = fCount;
+  buildScene(jointPct,pnlWon);
+  updateItemLog(fCount,pnlWon);
+  startCoinRain(jointPct>=20);
+
+  const pnlColor=jointPnl>=0?'var(--red)':'#1e40af';
+  const banner=document.getElementById('pnlBanner');
+  banner.style.background=jointPnl>=0?'#fff5f5':'#eff6ff';
+  banner.style.borderTop='2px solid var(--border)';
+  document.getElementById('bigPnl').style.color=pnlColor;
+  document.getElementById('bigPnl').textContent=fsign(jointPnl);
+  document.getElementById('bigPct').style.color=pnlColor;
+  document.getElementById('bigPct').textContent=fp(jointPct);
+  document.getElementById('bigSub').textContent=jointPnl>=0?`🔴 수익 중 · 가구 ${fCount}개`:`🔵 손실 중`;
+
+  const hc=halfPnl>=0?'cg':'cr';
+  document.getElementById('yejinEval').textContent=fk(halfEval);
+  document.getElementById('yejinPnl').textContent=fsign(halfPnl);document.getElementById('yejinPnl').className='ps-val '+hc;
+  document.getElementById('yejinPct').textContent=fp(halfPct);document.getElementById('yejinPct').className='ps-val '+hc;
+  document.getElementById('yejinBadge').textContent=fp(halfPct);document.getElementById('yejinBadge').className='person-badge badge '+(halfPnl>=0?'up':'down');
+  document.getElementById('yehoSharedEval').textContent=fk(YEHO_QTY*curKrw);
+  const yehoSharedPnl=YEHO_QTY*curKrw-YEHO_COST;
+  document.getElementById('yehoSharedPnl').textContent=fsign(yehoSharedPnl);
+  const ec=extraPnl>=0?'cg':'cr';
+  document.getElementById('yehoExtraEval').textContent=fk(extraEval);
+  document.getElementById('yehoExtraPnl').textContent=fsign(extraPnl);document.getElementById('yehoExtraPnl').className='ps-val '+ec;
+  const ytc=yehoTotalPnl>=0?'cg':'cr';
+  document.getElementById('yehoTotalEval').textContent=fk(yehoTotalEval);
+  document.getElementById('yehoTotalPnl').textContent=fsign(yehoTotalPnl);document.getElementById('yehoTotalPnl').className='ps-val '+ytc;
+  document.getElementById('yehoTotalPct').textContent=fp(yehoTotalPct);document.getElementById('yehoTotalPct').className='ps-val '+ytc;
+  document.getElementById('yehoBadge').textContent=fp(yehoTotalPct);document.getElementById('yehoBadge').className='person-badge badge '+(yehoTotalPnl>=0?'up':'down');
+}
+
+loadPrice();
+setInterval(loadPrice,60000);
+window.addEventListener('resize', () => {
+  if (typeof lastFCount !== 'undefined') renderFurnitureOverlay(lastFCount);
+});
+</script>
+<script>
+(function(){
+  // ── 탭 전환 ──
+  window.zzTab = function(t){
+    document.getElementById('tab-asset').style.display = (t==='asset')?'':'none';
+    document.getElementById('tab-ledger').style.display = (t==='ledger')?'':'none';
+    document.getElementById('tab-yejin').style.display = (t==='yejin')?'':'none';
+    document.getElementById('tabbtn-asset').classList.toggle('on', t==='asset');
+    document.getElementById('tabbtn-ledger').classList.toggle('on', t==='ledger');
+    var yb = document.getElementById('tabbtn-yejin');
+    yb.classList.toggle('on', t==='yejin');
+    yb.classList.toggle('yj-on', t==='yejin');
+    if(t==='ledger') lgRender();
+    if(t==='yejin') yjRender();
+  };
+
+  // ── 제호 가계부 (데이터는 이 브라우저 localStorage에 저장) ──
+  var LG_ALLOWANCE = 300870; // 월 용돈
+  var LG_FIXED = [
+    {id:'life',      name:'생활비',    amt:1200000, rule:'always', note:'월세·공과금·연금·건보·관리비'},
+    {id:'bizloan',   name:'사업자대출', amt:700000,  rule:'always'},
+    {id:'samsung',   name:'삼성카드',   amt:500000,  rule:'until', until:'2026-10', note:'~10월'},
+    {id:'fuel',      name:'익산 주유',  amt:240000,  rule:'always'},
+    {id:'petsitter', name:'펫시터',    amt:157000,  rule:'always'},
+    {id:'petsupply', name:'반려용품',   amt:250000,  rule:'always'},
+    {id:'hair',      name:'헤어',      amt:100000,  rule:'always'},
+    {id:'biz',       name:'사업비',     amt:590000,  rule:'always', note:'창고·세무30+툴10+클로드코드19'}
+  ];
+  var _n = new Date();
+  var lgYm = _n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0');
+
+  function won(n){ return '₩'+Math.round(n).toLocaleString('ko-KR'); }
+  function man(n){ var m=n/10000; return (Math.round(m*10)/10).toLocaleString('ko-KR')+'만원'; }
+  function isActive(e,ym){ if(e.rule==='until') return ym<=e.until; if(e.rule==='months') return e.months.indexOf(ym)>=0; return true; }
+  function activeFixed(){ return LG_FIXED.filter(function(e){ return isActive(e,lgYm); }); }
+  function fixedSum(){ return activeFixed().reduce(function(s,e){ return s+e.amt; },0); }
+  function k(t){ return 'zzbit_lg_'+t+'_'+lgYm; }
+  function loadCard(){ try{ return JSON.parse(localStorage.getItem(k('card')))||{}; }catch(e){ return {}; } }
+  function saveCardObj(o){ try{ localStorage.setItem(k('card'), JSON.stringify(o)); }catch(e){} }
+  function loadSpend(){ try{ return JSON.parse(localStorage.getItem(k('spend')))||[]; }catch(e){ return []; } }
+  function saveSpend(a){ try{ localStorage.setItem(k('spend'), JSON.stringify(a)); }catch(e){} }
+  function escH(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  window.lgMove = function(d){
+    var p = lgYm.split('-'); var dt = new Date(+p[0], (+p[1]-1)+d, 1);
+    lgYm = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+    lgRender();
+  };
+  window.lgSaveCard = function(){
+    var o = loadCard();
+    var s = parseInt((document.getElementById('lgShinhan').value||'').replace(/[^0-9]/g,''),10);
+    var l = parseInt((document.getElementById('lgLotte').value||'').replace(/[^0-9]/g,''),10);
+    o.shinhan = isNaN(s)?0:s; o.lotte = isNaN(l)?0:l;
+    saveCardObj(o); lgRender();
+  };
+  window.lgAddSpend = function(){
+    var memo = document.getElementById('lgSpMemo').value.trim();
+    var amt = parseInt((document.getElementById('lgSpAmt').value||'').replace(/[^0-9]/g,''),10);
+    if(!amt){ alert('금액을 입력하세요'); return; }
+    if(!memo) memo='(내용없음)';
+    var t = new Date();
+    var date = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+    var a = loadSpend(); a.push({date:date, memo:memo, amt:amt}); saveSpend(a);
+    document.getElementById('lgSpMemo').value=''; document.getElementById('lgSpAmt').value='';
+    lgRender();
+  };
+  window.lgDelSpend = function(i){ var a=loadSpend(); a.splice(i,1); saveSpend(a); lgRender(); };
+  window.lgToggleFx = function(){ var el=document.getElementById('lgFxList'), c=document.getElementById('lgFxCaret'); var show=el.style.display==='none'; el.style.display=show?'':'none'; if(c) c.textContent=show?'▴':'▾'; };
+
+  window.lgRender = function(){
+    var p = lgYm.split('-');
+    document.getElementById('lgMonth').textContent = p[0]+'년 '+(+p[1])+'월';
+    var fx = activeFixed(), fsum = fixedSum();
+    document.getElementById('lgFixedSum').textContent = man(fsum);
+    var card = loadCard(); var sh = card.shinhan||0, lt = card.lotte||0;
+    document.getElementById('lgShinhanV').textContent = won(sh);
+    document.getElementById('lgLotteV').textContent = won(lt);
+    var shIn=document.getElementById('lgShinhan'), ltIn=document.getElementById('lgLotte');
+    if(document.activeElement!==shIn) shIn.value = sh||'';
+    if(document.activeElement!==ltIn) ltIn.value = lt||'';
+    var out = fsum + sh + lt;
+    document.getElementById('lgOut').textContent = man(out);
+    document.getElementById('lgOutWon').textContent = won(out);
+    var fl = document.getElementById('lgFxList');
+    fl.innerHTML = fx.map(function(e){
+      return '<div class="lg-fxrow"><span>'+e.name+(e.note?' <small>'+e.note+'</small>':'')+'</span><span class="am">'+man(e.amt)+'</span></div>';
+    }).join('');
+    var sp = loadSpend(); var spent = sp.reduce(function(s,e){ return s+e.amt; },0);
+    // 신한카드·롯데카드·생활비·대출은 사용합계엔 포함하되 남은용돈 계산에선 제외(용돈이 아닌 별도 지출)
+    var LG_ALLOW_EXCLUDE = ['신한카드','롯데카드','생활비','대출'];
+    var lgIsExcl = function(memo){ memo=String(memo||''); return LG_ALLOW_EXCLUDE.some(function(k){ return memo.indexOf(k)>=0; }); };
+    var spentAllow = sp.reduce(function(s,e){ return s + (lgIsExcl(e.memo) ? 0 : e.amt); },0);
+    var remain = LG_ALLOWANCE - spentAllow;
+    var al = document.getElementById('lgAllow');
+    al.textContent = won(remain); al.classList.toggle('neg', remain<0);
+    document.getElementById('lgAllowSpent').textContent = won(LG_ALLOWANCE)+' 중 '+won(spentAllow)+' 사용';
+    var sl = document.getElementById('lgSpList');
+    sl.innerHTML = (sp.length ? sp.map(function(e,i){
+      return '<div class="lg-inc"><span class="d">'+e.date.slice(5).replace('-','/')+' · '+escH(e.memo)+'</span>'
+        + '<span><span class="a">'+won(e.amt)+'</span> <span class="x" onclick="lgDelSpend('+i+')">✕</span></span></div>';
+    }).join('') : '<div class="lg-inc" style="border:none;color:var(--sub);font-size:12px">아직 지출이 없어요. 내용·금액을 추가하세요.</div>')
+      + '<div class="lg-inc-total"><span>사용 합계</span><span>'+won(spent)+'</span></div>';
+  };
+
+  // ── 예진 가계부 ────────────────────────────────────────────
+  // 돈의 흐름 규칙
+  //   수입          → 케이뱅크 +
+  //   지출 '용돈'    → 토스뱅크 −
+  //   지출 그 밖(고정) → 케이뱅크 −
+  //   이동          → 케이뱅크 −, 토스뱅크 +
+  // 잔액은 따로 저장하지 않고 기록 전체에서 매번 다시 계산한다.
+  // 기록을 지우거나 고쳐도 잔액이 저절로 맞고, 숫자가 어긋날 일이 없다.
+  var YJ_CAT = {
+    'in' : ['급여','용돈','기타'],
+    'out': ['월세','공과금','휴대폰','속눈썹','생필품','강아지미용','용돈']
+  };
+  var YJ_ALLOW = '용돈';               // 지출에서 이것만 토스뱅크
+  // 가계부를 쓰기 전부터 통장에 있던 돈. 여기서 시작해 기록만큼 더하고 뺀다.
+  var YJ_START_KBANK = 502113;
+  var YJ_START_TOSS  = 12035;
+  var yjType = 'in';
+  var yjYm = lgYm;                     // 처음 열 때는 이번달
+
+  function yjKey(){ return 'zzbit_yj_tx'; }
+  function yjLoad(){ try{ return JSON.parse(localStorage.getItem(yjKey()))||[]; }catch(e){ return []; } }
+  function yjSave(a){ try{ localStorage.setItem(yjKey(), JSON.stringify(a)); }catch(e){} }
+  function yjIsFixed(t){ return t.type==='out' && t.cat!==YJ_ALLOW; }
+
+  // 통장 잔액 — 기간 구분 없이 전부 누적한다
+  function yjBalance(){
+    var k=YJ_START_KBANK, t=YJ_START_TOSS;
+    yjLoad().forEach(function(x){
+      if(x.type==='in')        k += x.amt;
+      else if(x.type==='move'){ k -= x.amt; t += x.amt; }
+      else if(x.type==='out'){ if(x.cat===YJ_ALLOW) t -= x.amt; else k -= x.amt; }
+    });
+    return {kbank:k, toss:t};
+  }
+
+  window.yjMove = function(d){
+    var p = yjYm.split('-'); var dt = new Date(+p[0], (+p[1]-1)+d, 1);
+    yjYm = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+    yjRender();
+  };
+
+  window.yjSetType = function(t){
+    yjType = t;
+    document.getElementById('yjSegIn').classList.toggle('on', t==='in');
+    document.getElementById('yjSegOut').classList.toggle('on', t==='out');
+    document.getElementById('yjSegOut').classList.toggle('out', t==='out');
+    yjFillCat();
+  };
+
+  function yjFillCat(){
+    var sel = document.getElementById('yjCat');
+    sel.innerHTML = YJ_CAT[yjType].map(function(c){ return '<option>'+c+'</option>'; }).join('');
+    yjHint();
+  }
+
+  function yjHint(){
+    var el = document.getElementById('yjRuleHint');
+    var cat = document.getElementById('yjCat').value;
+    if(yjType==='in'){
+      el.innerHTML = '수입은 <b style="color:#3b5bdb">케이뱅크</b>에 쌓입니다.';
+    } else if(cat===YJ_ALLOW){
+      el.innerHTML = '용돈 지출은 <b style="color:#0064ff">토스뱅크</b>에서 빠집니다.';
+    } else {
+      el.innerHTML = '고정지출은 <b style="color:#3b5bdb">케이뱅크</b>에서 빠집니다.';
+    }
+  }
+
+  // 화살표를 누르면 이체 창이 뜬다
+  window.yjToggleMove = function(){
+    var b = yjBalance();
+    document.getElementById('yjMoveBal').textContent =
+      '케이뱅크 ' + won(b.kbank) + ' 중에서';
+    var el = document.getElementById('yjMoveAmt');
+    el.value = '';
+    document.getElementById('yjMoveModal').style.display = 'flex';
+    el.focus();
+  };
+  window.yjMoveClose = function(){
+    document.getElementById('yjMoveModal').style.display = 'none';
+  };
+
+  window.yjDoMove = function(){
+    var el = document.getElementById('yjMoveAmt');
+    var amt = parseInt((el.value||'').replace(/[^0-9]/g,''),10);
+    if(!amt){ alert('이체할 금액을 입력하세요'); return; }
+    var b = yjBalance();
+    if(amt > b.kbank && !confirm('케이뱅크 잔액('+won(b.kbank)+')보다 많아요.\n그래도 옮길까요?')) return;
+    var a = yjLoad();
+    a.push({id:yjNewId(), date:yjToday(), type:"move", cat:"", amt:amt});
+    yjSave(a); el.value='';
+    yjMoveClose();
+    yjRender();
+  };
+
+  function yjToday(){
+    var t=new Date();
+    return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  }
+
+  // 기록마다 겹치지 않는 번호를 매긴다.
+  // Date.now() 만 쓰면 같은 1000분의 1초에 들어간 기록끼리 번호가 같아지고,
+  // 하나를 지울 때 엉뚱한 기록까지 함께 지워진다.
+  var yjSeq = 0;
+  function yjNewId(){ return Date.now()*1000 + (yjSeq++ % 1000); }
+
+  window.yjAdd = function(){
+    var date = document.getElementById('yjDate').value || yjToday();
+    var cat  = document.getElementById('yjCat').value;
+    var amtE = document.getElementById('yjAmt');
+    var memoE = document.getElementById('yjMemo');
+    var amt  = parseInt((amtE.value||'').replace(/[^0-9]/g,''),10);
+    if(!amt){ alert('금액을 입력하세요'); return; }
+    var a = yjLoad();
+    a.push({id:yjNewId(), date:date, type:yjType, cat:cat, amt:amt,
+            memo:(memoE.value||'').trim()});     // 내용은 안 써도 된다
+    yjSave(a);
+    amtE.value=''; memoE.value='';
+    yjYm = date.slice(0,7);            // 넣은 달로 옮겨 바로 보이게
+    yjRender();
+  };
+
+  window.yjDel = function(id){
+    var a = yjLoad().filter(function(x){ return x.id!==id; });
+    yjSave(a); yjRender();
+  };
+
+  // 달력 칸은 좁다. 원 단위를 그대로 쓰면 넘치니 만·천 단위로 줄여 쓴다.
+  //   2,400,000 → 240만   23,000 → 2.3만   5,000 → 5천   500 → 500
+  function yjShort(n){
+    if(n>=10000){ var m=n/10000; return (m>=100 ? Math.round(m) : Math.round(m*10)/10)+'만'; }
+    if(n>=1000){ return (Math.round(n/100)/10)+'천'; }
+    return String(n);
+  }
+
+  function yjDrawCal(mon){
+    var p = yjYm.split('-'), y = +p[0], m = +p[1];
+    var firstDow = new Date(y, m-1, 1).getDay();      // 0=일요일
+    var days = new Date(y, m, 0).getDate();           // 이 달의 마지막 날
+
+    // 날짜별로 수입·지출을 합친다. 통장 간 이동은 수입도 지출도 아니라 넣지 않는다.
+    var byDay = {};
+    mon.forEach(function(x){
+      var d = +String(x.date).slice(8,10);
+      if(!byDay[d]) byDay[d] = {inc:0, fix:0, out:0};
+      if(x.type==='in') byDay[d].inc += x.amt;
+      else if(x.type==='out'){
+        if(x.cat===YJ_ALLOW) byDay[d].out += x.amt;   // 용돈
+        else                 byDay[d].fix += x.amt;   // 고정지출
+      }
+    });
+
+    var t = new Date();
+    var todayYm = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0');
+    var todayD = (todayYm===yjYm) ? t.getDate() : 0;
+
+    var html = '';
+    for(var i=0;i<firstDow;i++) html += '<div class="yj-cd pad"></div>';
+    for(var d=1; d<=days; d++){
+      var v = byDay[d];
+      html += '<div class="yj-cd'+(d===todayD?' today':'')+'">'
+            + '<span class="n">'+d+'</span>'
+            + (v && v.inc ? '<span class="i">+'+yjShort(v.inc)+'</span>' : '')
+            + (v && v.fix ? '<span class="f">−'+yjShort(v.fix)+'</span>' : '')
+            + (v && v.out ? '<span class="o">−'+yjShort(v.out)+'</span>' : '')
+            + '</div>';
+    }
+    var tail = (firstDow + days) % 7;
+    if(tail) for(var j=tail;j<7;j++) html += '<div class="yj-cd pad"></div>';
+    document.getElementById('yjCal').innerHTML = html;
+  }
+
+  window.yjRender = function(){
+    var p = yjYm.split('-');
+    document.getElementById('yjMonth').textContent = p[0]+'년 '+(+p[1])+'월';
+
+    // 잔액을 먼저 그린다.
+    // 뒤쪽에서 무엇이 잘못되더라도 잔액만은 반드시 화면에 남아야 한다.
+    var b = yjBalance();
+    var kE = document.getElementById('yjKbank'), tE = document.getElementById('yjToss');
+    kE.textContent = won(b.kbank); kE.classList.toggle('neg', b.kbank<0);
+    tE.textContent = won(b.toss);  tE.classList.toggle('neg', b.toss<0);
+
+    var all = yjLoad();
+    var mon = all.filter(function(x){ return String(x.date).slice(0,7)===yjYm; });
+    var sIn = 0, sAllow = 0, sFixed = 0;
+    mon.forEach(function(x){
+      if(x.type==='in') sIn += x.amt;
+      else if(x.type==='out'){ if(x.cat===YJ_ALLOW) sAllow += x.amt; else sFixed += x.amt; }
+    });
+    var sOut = sAllow + sFixed, net = sIn - sOut;
+    document.getElementById('yjSumIn').textContent    = won(sIn);
+    document.getElementById('yjSumAllow').textContent = won(sAllow);
+    document.getElementById('yjSumFixed').textContent = won(sFixed);
+    document.getElementById('yjSumOut').textContent   = won(sOut);
+    var nE = document.getElementById('yjSumNet');
+    nE.textContent = won(net);
+    nE.style.color = net<0 ? 'var(--yj-out)' : 'var(--text)';
+
+    yjDrawCal(mon);
+
+    var dE = document.getElementById('yjDate');
+    if(!dE.value) dE.value = yjToday();
+
+    var list = mon.slice().sort(function(x,y){
+      return x.date===y.date ? y.id-x.id : (x.date<y.date?1:-1);
+    });
+    document.getElementById('yjList').innerHTML = (list.length ? list.map(function(x){
+      var tag, nm, sign, col;
+      if(x.type==='move'){ tag='<span class="yj-tag mv">이동</span>'; nm='케이뱅크 → 토스뱅크'; sign=''; col='#0064ff'; }
+      else if(x.type==='in'){ tag='<span class="yj-tag in">수입</span>'; nm=x.cat; sign='+'; col='var(--yj-in)'; }
+      else { var isAllow = (x.cat===YJ_ALLOW);
+             tag='<span class="yj-tag '+(isAllow?'out':'fix')+'">지출</span>';
+             nm = x.cat + (isAllow ? ' <small style="color:#0064ff">토스</small>'
+                                   : ' <small style="color:#3b5bdb">케뱅</small>');
+             sign='−'; col = isAllow ? 'var(--yj-out)' : 'var(--yj-fix)'; }
+      // 내용은 사람이 직접 쓴 글이라 그대로 넣으면 안 된다. 반드시 escH 를 거친다.
+      var memo = (x.memo||'').trim();
+      var memoHtml = memo ? ' <span class="yj-memo">· '+escH(memo)+'</span>' : '';
+      return '<div class="lg-inc"><span class="d">'+x.date.slice(5).replace('-','/')+' '+tag+nm+memoHtml+'</span>'
+        + '<span><span class="a" style="color:'+col+'">'+sign+won(x.amt)+'</span> '
+        + '<span class="x" onclick="yjDel('+x.id+')">✕</span></span></div>';
+    }).join('') : '<div class="lg-inc" style="border:none;color:var(--sub);font-size:12px">이 달에는 기록이 없어요.</div>');
+  };
+
+  window.yjHintNow = function(){ yjHint(); };
+
+  yjSetType('in');
+})();
+</script>
+
+<div class="bank-sync" id="bankSync">저장됨</div>
+<script src="/bank/sync.js"></script>
+<script>
+// 서버에서 자료를 받아온 뒤 화면을 다시 그린다.
+bankBoot().then(function(ok){
+  if(!ok) return;
+  try{ if(window.lgRender) lgRender(); }catch(e){}
+  try{ if(window.yjRender) yjRender(); }catch(e){}
+});
+</script>
+</body>
+</html>

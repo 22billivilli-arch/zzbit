@@ -221,46 +221,6 @@ console.log('\n⑰ 잔액은 무슨 일이 있어도 먼저 그려진다');
 const order = /window\.yjRender = function\(\)\{([\s\S]*?)yjDrawCal/.exec(html)[1];
 check('잔액 그리기가 합계·달력보다 앞', order.indexOf('yjKbank') < order.indexOf('yjSumIn'), true);
 
-console.log('\n⑱ 이번달 한마디');
-Object.keys(store).forEach(k => { if (/_say_/.test(k)) delete store[k]; });
-store['zzbit_yj_tx'] = '[]';
-while ($('yjMonth').textContent !== '2026년 8월') W.yjMove($('yjMonth').textContent > '2026년 8월' ? -1 : 1);
-
-check('처음엔 안내 문구', $('yjSayText').textContent, '이번달 한마디를 적어보세요');
-check('빈 상태 표시', $('yjSayText').classList.contains('empty'), true);
-
-W.yjSayOpen();
-check('수정 누르면 모달이 열린다', $('yjSayModal').style.display, 'flex');
-check('제목에 이번달', $('yjSayModalTitle').textContent, '8월 한마디');
-check('표정 6개가 그려진다', ($('yjSayFaces').innerHTML.match(/<button/g) || []).length, 6);
-
-$('yjSayInput').value = '이번달은 아껴쓰자!';
-W.yjSayCount();
-check('글자수 표시', $('yjSayCount').textContent, '10 / 60');
-W.yjSayFace(4);                       // sweat = 힘듦
-W.yjSaySave();
-check('저장하면 모달이 닫힌다', $('yjSayModal').style.display, 'none');
-check('말풍선에 적힌다', $('yjSayText').textContent, '이번달은 아껴쓰자!');
-check('빈 상태 아님', $('yjSayText').classList.contains('empty'), false);
-check('고른 표정이 저장된다', JSON.parse(store['zzbit_yj_say_2026-08']).face, 'sweat');
-
-console.log('\n⑲ 달이 바뀌면 한마디는 저절로 비워진다');
-W.yjMove(1);
-check('9월엔 다시 안내 문구', $('yjSayText').textContent, '이번달 한마디를 적어보세요');
-check('9월은 빈 상태', $('yjSayText').classList.contains('empty'), true);
-W.yjMove(-1);
-check('8월로 돌아오면 그대로 있다', $('yjSayText').textContent, '이번달은 아껴쓰자!');
-check('달마다 따로 저장된다', Object.keys(store).filter(k => /_say_/.test(k)).length, 1);
-
-W.yjSayOpen();
-$('yjSayInput').value = '';
-W.yjSaySave();
-check('비우면 다시 안내 문구', $('yjSayText').textContent, '이번달 한마디를 적어보세요');
-
-W.yjSayOpen();
-W.yjSayClose();
-check('취소하면 모달만 닫힌다', $('yjSayModal').style.display, 'none');
-
 console.log('\n⑳ 내용(선택 입력)');
 store['zzbit_yj_tx'] = '[]';
 while ($('yjMonth').textContent !== '2026년 8월') W.yjMove($('yjMonth').textContent > '2026년 8월' ? -1 : 1);

@@ -86,10 +86,11 @@ def build():
 
     # ④ 로그인 화면·동기화 붙이기
     s = s.replace("</style>", LOGIN_CSS, 1)
-    ver = str(int(Path(BASE / "index.html").stat().st_mtime))
+    ver = str(int((BASE / "sync.js").stat().st_mtime))
     s = s.replace("</body>", BOOT.replace("__VER__", ver), 1)
 
     io.open(OUT / "index.html", "w", encoding="utf-8").write(s)
+    shutil.copy2(BASE / "sync.js", OUT / "sync.js")
     for p in BASE.glob("*.png"):
         shutil.copy2(p, IMG / p.name)
 
@@ -99,6 +100,7 @@ def build():
     print(f"  깃허브 주소   {gh}곳 → 0곳")
     print(f"  업비트 중계   {up}곳")
     print(f"  남은 base64   {left}곳")
+    print(f"  sync.js 판번호 {ver}")
     for must in ('/bank/img/', '/bank/sync.js', '/bank/api/upbit', 'bank-login'):
         print(f"  {must:<16} {'있음' if must in s else '없음 ✗'}")
     return len(re.findall(r"[\"']img/", s)) == 0 and left == 0
@@ -111,6 +113,7 @@ def upload():
                     str(tgz), f"{SERVER}:/tmp/_deploy.tgz"], check=True)
     cmd = (f"cd /tmp && rm -rf _deploy && tar xzf _deploy.tgz && "
            f"cp _deploy/index.html {REMOTE}/public/index.html && "
+           f"cp _deploy/sync.js {REMOTE}/public/sync.js && "
            f"rm -rf {REMOTE}/public/img && cp -r _deploy/img {REMOTE}/public/img && "
            f"rm -rf /tmp/_deploy /tmp/_deploy.tgz && "
            f"pm2 restart bank >/dev/null 2>&1 && echo 올림완료")

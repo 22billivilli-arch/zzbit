@@ -62,14 +62,17 @@ console.log(`  (시작 잔액 — 케이뱅크 ${SK.toLocaleString()} · 토스�
 const $ = id => document.getElementById(id);   // els 는 호출돼야 생기므로 항상 이걸로 집는다
 const bal = () => ({ k: num($('yjKbank').textContent), t: num($('yjToss').textContent) });
 
-function add(type, cat, amt, date) {
+function add(type, cat, amt, date, bank) {
   W.yjSetType(type);
   $('yjCat').value = cat;
+  W.yjCatChanged();                 // 통장을 어울리는 쪽으로 맞춘다
+  if (bank) W.yjSetBank(bank);      // 직접 고른 경우
   $('yjDate').value = date;
   $('yjAmt').value = String(amt);
+  $('yjMemo').value = '';
   W.yjAdd();
 }
-function move(amt) { $('yjMoveAmt').value = String(amt); W.yjDoMove(); }
+function move(amt, dir) { W.yjToggleMove(dir || 'kt'); $('yjMoveAmt').value = String(amt); W.yjDoMove(); }
 
 // ── 검사 ────────────────────────────────────────────────────
 console.log('① 처음 상태');
@@ -150,7 +153,7 @@ check('안내 떴다', alerts[alerts.length - 1], '금액을 입력하세요');
 console.log('\n⑬ 저장 형식');
 const saved = JSON.parse(store['zzbit_yj_tx']);
 check('키 이름', Object.keys(store)[0], 'zzbit_yj_tx');
-check('필드', Object.keys(saved[0]).sort().join(','), 'amt,cat,date,id,memo,type');
+check('필드', Object.keys(saved[0]).sort().join(','), 'amt,bank,cat,date,id,memo,type');
 
 console.log('\n⑭ 시작 잔액이 잔액에 반영된다');
 store['zzbit_yj_tx'] = '[]';
@@ -202,14 +205,14 @@ console.log('\n⑯ 화살표 → 이체 창');
 store['zzbit_yj_tx'] = '[]';
 W.yjRender();
 $('yjMoveModal').style.display = 'none';
-W.yjToggleMove();
+W.yjToggleMove('kt');
 check('누르면 이체 창이 뜬다', $('yjMoveModal').style.display, 'flex');
 check('지금 케뱅 잔액을 알려준다', /케이뱅크/.test($('yjMoveBal').textContent), true);
 check('금액칸은 비어서 시작', $('yjMoveAmt').value, '');
 W.yjMoveClose();
 check('취소하면 닫힌다', $('yjMoveModal').style.display, 'none');
 
-W.yjToggleMove();
+W.yjToggleMove('kt');
 $('yjMoveAmt').value = '80000';
 W.yjDoMove();
 check('이체하면 케뱅에서 빠지고', bal().k, SK - 80000);
@@ -228,6 +231,7 @@ while ($('yjMonth').textContent !== '2026년 8월') W.yjMove($('yjMonth').textCo
 function addMemo(type, cat, amt, date, memo) {
   W.yjSetType(type);
   $('yjCat').value = cat;
+  W.yjCatChanged();
   $('yjDate').value = date;
   $('yjAmt').value = String(amt);
   $('yjMemo').value = memo === undefined ? '' : memo;
@@ -268,6 +272,55 @@ check('잔액이 계산된다', bal().k, SK + 1000000);
 check('토스도 계산된다', bal().t, ST - 7000);
 check('내역이 그려진다', ($('yjList').innerHTML.match(/lg-inc/g) || []).length >= 2, true);
 check('없는 내용 때문에 깨지지 않는다', /undefined/.test($('yjList').innerHTML), false);
+
+console.log('\n㉒ 통장 고르기');
+store['zzbit_yj_tx'] = '[]';
+W.yjRender();
+W.yjSetType('in');
+check('입금은 케이뱅크가 기본', $('yjBankK').classList.contains('on'), true);
+W.yjSetType('out'); $('yjCat').value = '용돈'; W.yjCatChanged();
+check('출금 용돈은 토스뱅크가 기본', $('yjBankT').classList.contains('on'), true);
+$('yjCat').value = '월세'; W.yjCatChanged();
+check('출금 월세는 케이뱅크가 기본', $('yjBankK').classList.contains('on'), true);
+
+add('out', '용돈', 5000, '2026-08-20', 'k');       // 기본과 다르게 케이뱅크로
+check('고른 대로 케이뱅크에서 빠진다', bal().k, SK - 5000);
+check('토스는 그대로', bal().t, ST);
+check('기록에 통장이 남는다', JSON.parse(store['zzbit_yj_tx'])[0].bank, 'k');
+
+add('in', '급여', 300000, '2026-08-20', 't');      // 입금을 토스뱅크로
+check('입금도 고른 통장으로', bal().t, ST + 300000);
+check('케뱅은 그대로', bal().k, SK - 5000);
+
+console.log('\n㉓ 양쪽으로 이체');
+store['zzbit_yj_tx'] = '[]'; W.yjRender();
+move(100000, 'kt');
+check('케이 → 토스 : 케뱅', bal().k, SK - 100000);
+check('케이 → 토스 : 토스', bal().t, ST + 100000);
+move(40000, 'tk');
+check('토스 → 케이 : 케뱅', bal().k, SK - 100000 + 40000);
+check('토스 → 케이 : 토스', bal().t, ST + 100000 - 40000);
+check('방향이 기록된다', JSON.parse(store['zzbit_yj_tx'])[1].dir, 'tk');
+check('내역에 방향이 보인다', /토스뱅크 → 케이뱅크/.test($('yjList').innerHTML), true);
+
+console.log('\n㉔ 통장이 안 적힌 예전 기록도 그대로 계산된다');
+store['zzbit_yj_tx'] = JSON.stringify([
+  { id: 1, date: '2026-08-05', type: 'in',   cat: '급여', amt: 1000000 },  // bank 없음
+  { id: 2, date: '2026-08-06', type: 'out',  cat: '용돈', amt: 7000 },     // 예전 규칙 = 토스
+  { id: 3, date: '2026-08-07', type: 'out',  cat: '월세', amt: 500000 },   // 예전 규칙 = 케뱅
+  { id: 4, date: '2026-08-08', type: 'move', cat: '',    amt: 200000 },    // dir 없음 = 케이→토스
+]);
+W.yjRender();
+check('케이뱅크', bal().k, SK + 1000000 - 500000 - 200000);
+check('토스뱅크', bal().t, ST - 7000 + 200000);
+check('예전 이체도 케이→토스로 읽힌다', /케이뱅크 → 토스뱅크/.test($('yjList').innerHTML), true);
+check('깨진 표시 없음', /undefined/.test($('yjList').innerHTML), false);
+
+console.log('\n㉕ 입금·출금 표기와 카테고리 순서');
+check('입금 버튼', /입금/.test(html), true);
+check('출금 버튼', /출금/.test(html), true);
+check('출금 카테고리 첫째가 용돈',
+  /'out':\s*\['용돈'/.test(code), true);
 
 console.log(`\n${'='.repeat(46)}\n  통과 ${ok} · 실패 ${fail}`);
 process.exit(fail ? 1 : 0);

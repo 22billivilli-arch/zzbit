@@ -166,15 +166,18 @@
   .yj-bank.k .nm{color:#3b5bdb}
   .yj-bank.t{border-color:#0064ff}
   .yj-bank.t .nm{color:#0064ff}
-  /* 두 통장 사이의 화살표가 곧 이체 버튼이다 */
-  .yj-xfer{flex:0 0 54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-    background:var(--card);border:2.5px solid var(--text);border-radius:12px;cursor:pointer;
-    box-shadow:3px 3px 0 var(--text);font-family:var(--sans);color:var(--text);padding:0}
-  .yj-xfer .ar{font-size:19px;font-family:var(--mono);line-height:1}
-  .yj-xfer .lb{font-size:9.5px;font-weight:700;line-height:1.15;color:var(--sub)}
-  .yj-xfer:active{transform:translate(3px,3px);box-shadow:none}
-  .yj-xfer.on{background:#0064ff;color:#fff}
-  .yj-xfer.on .lb{color:#fff}
+  /* 두 통장 사이의 화살표가 곧 이체 버튼이다. 위=케이→토스, 아래=토스→케이 */
+  .yj-xfers{flex:0 0 46px;display:flex;flex-direction:column;gap:4px}
+  .yj-xfer{flex:1;display:flex;align-items:center;justify-content:center;
+    background:var(--card);border:2.5px solid var(--text);border-radius:10px;cursor:pointer;
+    box-shadow:2px 2px 0 var(--text);font-family:var(--sans);color:var(--text);padding:0}
+  .yj-xfer .ar{font-size:17px;font-family:var(--mono);line-height:1;font-weight:700}
+  .yj-xfer:active{transform:translate(2px,2px);box-shadow:none}
+  /* 통장 고르기 */
+  .yj-banksel{margin-top:2px}
+  .yj-banksel button{font-size:12.5px;padding:8px}
+  .yj-banksel button.on{background:#3b5bdb;color:#fff}
+  .yj-banksel button.on.toss{background:#0064ff}
   .yj-xfer-line{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;font-size:14px;font-weight:700}
   .yj-xfer-line .from{color:#3b5bdb}
   .yj-xfer-line .to{color:#0064ff}
@@ -410,9 +413,14 @@
       <div class="nm">케이뱅크</div>
       <div class="bal" id="yjKbank">₩0</div>
     </div>
-    <button class="yj-xfer" id="yjXferBtn" onclick="yjToggleMove()" title="케이뱅크에서 토스뱅크로 용돈 이체">
-      <span class="ar">→</span><span class="lb">용돈<br>이체</span>
-    </button>
+    <div class="yj-xfers">
+      <button class="yj-xfer" onclick="yjToggleMove('kt')" title="케이뱅크에서 토스뱅크로">
+        <span class="ar">→</span>
+      </button>
+      <button class="yj-xfer" onclick="yjToggleMove('tk')" title="토스뱅크에서 케이뱅크로">
+        <span class="ar">←</span>
+      </button>
+    </div>
     <div class="yj-bank t">
       <div class="nm">토스뱅크</div>
       <div class="bal" id="yjToss">₩0</div>
@@ -422,12 +430,16 @@
   <div class="sec-title">✏️ 기록하기</div>
   <div class="lg-card">
     <div class="yj-seg">
-      <button id="yjSegIn" class="on" onclick="yjSetType('in')">＋ 수입</button>
-      <button id="yjSegOut" onclick="yjSetType('out')">− 지출</button>
+      <button id="yjSegIn" class="on" onclick="yjSetType('in')">＋ 입금</button>
+      <button id="yjSegOut" onclick="yjSetType('out')">− 출금</button>
     </div>
     <div class="lg-inputrow">
       <input type="date" id="yjDate" style="flex:1 1 132px">
-      <select id="yjCat" style="flex:1 1 116px" onchange="yjHintNow()"></select>
+      <select id="yjCat" style="flex:1 1 116px" onchange="yjCatChanged()"></select>
+    </div>
+    <div class="yj-seg yj-banksel">
+      <button id="yjBankK" onclick="yjSetBank('k')">케이뱅크</button>
+      <button id="yjBankT" onclick="yjSetBank('t')">토스뱅크</button>
     </div>
     <div class="lg-inputrow">
       <input type="number" id="yjAmt" placeholder="금액(원)" inputmode="numeric" style="flex:1 1 108px">
@@ -440,11 +452,11 @@
   <div class="sec-title">📊 이번달 합계</div>
   <div class="lg-card">
     <div class="yj-sum">
-      <div class="c"><div class="l">총수입</div><div class="v" id="yjSumIn" style="color:var(--yj-in)">₩0</div></div>
-      <div class="c"><div class="l">용돈 지출</div><div class="v" id="yjSumAllow" style="color:var(--yj-out)">₩0</div></div>
-      <div class="c"><div class="l">고정지출</div><div class="v" id="yjSumFixed" style="color:var(--yj-fix)">₩0</div></div>
-      <div class="c"><div class="l">지출 합계</div><div class="v" id="yjSumOut" style="color:var(--yj-out)">₩0</div></div>
-      <div class="c wide"><div class="l">이번달 남은 돈 (수입 − 지출)</div><div class="v" id="yjSumNet">₩0</div></div>
+      <div class="c"><div class="l">총입금</div><div class="v" id="yjSumIn" style="color:var(--yj-in)">₩0</div></div>
+      <div class="c"><div class="l">용돈 출금</div><div class="v" id="yjSumAllow" style="color:var(--yj-out)">₩0</div></div>
+      <div class="c"><div class="l">고정 출금</div><div class="v" id="yjSumFixed" style="color:var(--yj-fix)">₩0</div></div>
+      <div class="c"><div class="l">출금 합계</div><div class="v" id="yjSumOut" style="color:var(--yj-out)">₩0</div></div>
+      <div class="c wide"><div class="l">이번달 남은 돈 (입금 − 출금)</div><div class="v" id="yjSumNet">₩0</div></div>
     </div>
   </div>
 
@@ -456,8 +468,8 @@
     </div>
     <div class="yj-cal-grid" id="yjCal"></div>
     <div class="yj-callegend">
-      <span><b style="color:var(--yj-in)">+</b> 수입</span>
-      <span><b style="color:var(--yj-fix)">−</b> 고정지출</span>
+      <span><b style="color:var(--yj-in)">+</b> 입금</span>
+      <span><b style="color:var(--yj-fix)">−</b> 고정</span>
       <span><b style="color:var(--yj-out)">−</b> 용돈</span>
     </div>
   </div>
@@ -469,11 +481,11 @@
 
   <div class="yj-modal" id="yjMoveModal" style="display:none">
     <div class="yj-modal-box">
-      <div class="yj-modal-title">용돈 이체</div>
+      <div class="yj-modal-title">통장 옮기기</div>
       <div class="yj-xfer-line">
-        <span class="from">케이뱅크</span>
+        <span class="from" id="yjMoveFrom">케이뱅크</span>
         <span class="ar">→</span>
-        <span class="to">토스뱅크</span>
+        <span class="to" id="yjMoveTo">토스뱅크</span>
       </div>
       <div class="yj-xfer-bal" id="yjMoveBal"></div>
       <input type="number" id="yjMoveAmt" placeholder="이체할 금액(원)" inputmode="numeric">
@@ -1090,9 +1102,24 @@ window.addEventListener('resize', () => {
   // 기록을 지우거나 고쳐도 잔액이 저절로 맞고, 숫자가 어긋날 일이 없다.
   var YJ_CAT = {
     'in' : ['급여','용돈','기타'],
-    'out': ['월세','공과금','휴대폰','속눈썹','생필품','강아지미용','용돈']
+    'out': ['용돈','월세','공과금','휴대폰','속눈썹','생필품','강아지미용']
   };
-  var YJ_ALLOW = '용돈';               // 지출에서 이것만 토스뱅크
+  var YJ_ALLOW = '용돈';               // 출금에서 이것만 기본이 토스뱅크
+  var yjBank = 'k';                    // 지금 고른 통장 (k=케이뱅크, t=토스뱅크)
+
+  // 어느 통장이 어울리는지 미리 골라 준다. 사람이 바꿀 수 있다.
+  function yjDefaultBank(type, cat){
+    if(type === 'in') return 'k';                 // 들어오는 돈은 케이뱅크
+    return (cat === YJ_ALLOW) ? 't' : 'k';        // 용돈은 토스, 나머지는 케이뱅크
+  }
+
+  // 예전 기록에는 통장이 안 적혀 있다. 그때 쓰던 규칙으로 채워 준다.
+  function bankOf(x){
+    if(x.bank === 'k' || x.bank === 't') return x.bank;
+    return yjDefaultBank(x.type, x.cat);
+  }
+  // 예전 이체는 케이뱅크 → 토스뱅크 뿐이었다.
+  function dirOf(x){ return (x.dir === 'tk') ? 'tk' : 'kt'; }
   // 가계부를 쓰기 전부터 통장에 있던 돈. 여기서 시작해 기록만큼 더하고 뺀다.
   var YJ_START_KBANK = 502113;
   var YJ_START_TOSS  = 12035;
@@ -1108,9 +1135,13 @@ window.addEventListener('resize', () => {
   function yjBalance(){
     var k=YJ_START_KBANK, t=YJ_START_TOSS;
     yjLoad().forEach(function(x){
-      if(x.type==='in')        k += x.amt;
-      else if(x.type==='move'){ k -= x.amt; t += x.amt; }
-      else if(x.type==='out'){ if(x.cat===YJ_ALLOW) t -= x.amt; else k -= x.amt; }
+      if(x.type==='move'){
+        if(dirOf(x)==='kt'){ k -= x.amt; t += x.amt; }   // 케이 → 토스
+        else               { t -= x.amt; k += x.amt; }   // 토스 → 케이
+        return;
+      }
+      var sign = (x.type==='in') ? 1 : -1;
+      if(bankOf(x)==='t') t += sign*x.amt; else k += sign*x.amt;
     });
     return {kbank:k, toss:t};
   }
@@ -1129,29 +1160,46 @@ window.addEventListener('resize', () => {
     yjFillCat();
   };
 
+  // 통장은 사람이 고른다. 종류를 바꾸면 어울리는 쪽으로 미리 옮겨 준다.
+  window.yjSetBank = function(b){
+    yjBank = b;
+    document.getElementById('yjBankK').classList.toggle('on', b==='k');
+    document.getElementById('yjBankT').classList.toggle('on', b==='t');
+    document.getElementById('yjBankT').classList.toggle('toss', b==='t');
+    yjHint();
+  };
+  window.yjCatChanged = function(){
+    yjSetBank(yjDefaultBank(yjType, document.getElementById('yjCat').value));
+  };
+
   function yjFillCat(){
     var sel = document.getElementById('yjCat');
     sel.innerHTML = YJ_CAT[yjType].map(function(c){ return '<option>'+c+'</option>'; }).join('');
-    yjHint();
+    yjSetBank(yjDefaultBank(yjType, sel.value));
   }
 
   function yjHint(){
     var el = document.getElementById('yjRuleHint');
-    var cat = document.getElementById('yjCat').value;
-    if(yjType==='in'){
-      el.innerHTML = '수입은 <b style="color:#3b5bdb">케이뱅크</b>에 쌓입니다.';
-    } else if(cat===YJ_ALLOW){
-      el.innerHTML = '용돈 지출은 <b style="color:#0064ff">토스뱅크</b>에서 빠집니다.';
-    } else {
-      el.innerHTML = '고정지출은 <b style="color:#3b5bdb">케이뱅크</b>에서 빠집니다.';
-    }
+    var nm = (yjBank==='t') ? '토스뱅크' : '케이뱅크';
+    var col = (yjBank==='t') ? '#0064ff' : '#3b5bdb';
+    el.innerHTML = (yjType==='in')
+      ? '<b style="color:'+col+'">'+nm+'</b> 에 들어옵니다.'
+      : '<b style="color:'+col+'">'+nm+'</b> 에서 빠집니다.';
   }
 
-  // 화살표를 누르면 이체 창이 뜬다
-  window.yjToggleMove = function(){
+  // 화살표를 누르면 이체 창이 뜬다. kt = 케이→토스, tk = 토스→케이
+  var yjMoveDir = 'kt';
+  window.yjToggleMove = function(dir){
+    yjMoveDir = (dir === 'tk') ? 'tk' : 'kt';
     var b = yjBalance();
-    document.getElementById('yjMoveBal').textContent =
-      '케이뱅크 ' + won(b.kbank) + ' 중에서';
+    var fromNm = (yjMoveDir==='kt') ? '케이뱅크' : '토스뱅크';
+    var toNm   = (yjMoveDir==='kt') ? '토스뱅크' : '케이뱅크';
+    var have   = (yjMoveDir==='kt') ? b.kbank : b.toss;
+    var fromEl = document.getElementById('yjMoveFrom');
+    var toEl   = document.getElementById('yjMoveTo');
+    fromEl.textContent = fromNm;  fromEl.style.color = (yjMoveDir==='kt') ? '#3b5bdb' : '#0064ff';
+    toEl.textContent   = toNm;    toEl.style.color   = (yjMoveDir==='kt') ? '#0064ff' : '#3b5bdb';
+    document.getElementById('yjMoveBal').textContent = fromNm + ' ' + won(have) + ' 중에서';
     var el = document.getElementById('yjMoveAmt');
     el.value = '';
     document.getElementById('yjMoveModal').style.display = 'flex';
@@ -1166,9 +1214,11 @@ window.addEventListener('resize', () => {
     var amt = parseInt((el.value||'').replace(/[^0-9]/g,''),10);
     if(!amt){ alert('이체할 금액을 입력하세요'); return; }
     var b = yjBalance();
-    if(amt > b.kbank && !confirm('케이뱅크 잔액('+won(b.kbank)+')보다 많아요.\n그래도 옮길까요?')) return;
+    var fromNm = (yjMoveDir==='kt') ? '케이뱅크' : '토스뱅크';
+    var have   = (yjMoveDir==='kt') ? b.kbank : b.toss;
+    if(amt > have && !confirm(fromNm+' 잔액('+won(have)+')보다 많아요.\n그래도 옮길까요?')) return;
     var a = yjLoad();
-    a.push({id:yjNewId(), date:yjToday(), type:"move", cat:"", amt:amt});
+    a.push({id:yjNewId(), date:yjToday(), type:"move", cat:"", amt:amt, dir:yjMoveDir});
     yjSave(a); el.value='';
     yjMoveClose();
     yjRender();
@@ -1194,7 +1244,8 @@ window.addEventListener('resize', () => {
     if(!amt){ alert('금액을 입력하세요'); return; }
     var a = yjLoad();
     a.push({id:yjNewId(), date:date, type:yjType, cat:cat, amt:amt,
-            memo:(memoE.value||'').trim()});     // 내용은 안 써도 된다
+            memo:(memoE.value||'').trim(),       // 내용은 안 써도 된다
+            bank:yjBank});                       // 어느 통장인지 함께 남긴다
     yjSave(a);
     amtE.value=''; memoE.value='';
     yjYm = date.slice(0,7);            // 넣은 달로 옮겨 바로 보이게
@@ -1288,13 +1339,25 @@ window.addEventListener('resize', () => {
     });
     document.getElementById('yjList').innerHTML = (list.length ? list.map(function(x){
       var tag, nm, sign, col;
-      if(x.type==='move'){ tag='<span class="yj-tag mv">이동</span>'; nm='케이뱅크 → 토스뱅크'; sign=''; col='#0064ff'; }
-      else if(x.type==='in'){ tag='<span class="yj-tag in">수입</span>'; nm=x.cat; sign='+'; col='var(--yj-in)'; }
-      else { var isAllow = (x.cat===YJ_ALLOW);
-             tag='<span class="yj-tag '+(isAllow?'out':'fix')+'">지출</span>';
-             nm = x.cat + (isAllow ? ' <small style="color:#0064ff">토스</small>'
-                                   : ' <small style="color:#3b5bdb">케뱅</small>');
-             sign='−'; col = isAllow ? 'var(--yj-out)' : 'var(--yj-fix)'; }
+      if(x.type==='move'){
+        tag='<span class="yj-tag mv">이체</span>';
+        nm = (dirOf(x)==='kt') ? '케이뱅크 → 토스뱅크' : '토스뱅크 → 케이뱅크';
+        sign=''; col='#0064ff';
+      }
+      else if(x.type==='in'){
+        tag='<span class="yj-tag in">입금</span>';
+        nm = x.cat + ((bankOf(x)==='t') ? ' <small style="color:#0064ff">토스</small>'
+                                        : ' <small style="color:#3b5bdb">케뱅</small>');
+        sign='+'; col='var(--yj-in)';
+      }
+      else {
+        // 색은 무엇에 썼는지(용돈/고정)로, 옆의 통장 표시는 실제 고른 통장으로.
+        var isAllow = (x.cat===YJ_ALLOW);
+        tag='<span class="yj-tag '+(isAllow?'out':'fix')+'">출금</span>';
+        nm = x.cat + ((bankOf(x)==='t') ? ' <small style="color:#0064ff">토스</small>'
+                                        : ' <small style="color:#3b5bdb">케뱅</small>');
+        sign='−'; col = isAllow ? 'var(--yj-out)' : 'var(--yj-fix)';
+      }
       // 내용은 사람이 직접 쓴 글이라 그대로 넣으면 안 된다. 반드시 escH 를 거친다.
       var memo = (x.memo||'').trim();
       var memoHtml = memo ? ' <span class="yj-memo">· '+escH(memo)+'</span>' : '';

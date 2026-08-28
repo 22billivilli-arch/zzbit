@@ -93,6 +93,20 @@
   .trio.wrap{flex-wrap:wrap}
   .trio.wrap>div{flex:1 1 calc(50% - 4px)}
   .trio>div.tap{cursor:pointer}
+  /* 루틴 */
+  .rt-btn{background:var(--olive-pale);color:#5f6f34;border:none;border-radius:9px;
+    padding:6px 12px;font:700 12.5px Pretendard;cursor:pointer}
+  .rt-btn:active{opacity:.7}
+  .rt-tabs{display:flex;gap:4px;margin:10px 0 14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .rt-tabs button{flex:0 0 auto;border:none;border-radius:9px;padding:8px 13px;
+    background:var(--bg);color:var(--muted);font:700 13px Pretendard;cursor:pointer}
+  .rt-tabs button.on{background:var(--olive);color:#fff}
+  .rt-tabs button.today{box-shadow:inset 0 0 0 1.5px var(--olive)}
+  .rt-row{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .rt-row:last-child{border-bottom:none}
+  .rt-time{flex:0 0 46px;font:700 13px Pretendard;color:var(--olive);font-feature-settings:'tnum'}
+  .rt-msg{font:500 13.5px Pretendard;color:#48463a;line-height:1.5}
+  .rt-empty{color:var(--muted);font:500 13px Pretendard;padding:16px 0;text-align:center}
   .trio>div.tap .lbl::after{content:' ›';color:var(--muted)}
   .modal .trio>div{padding:10px 8px}
   .modal .trio .v{font-size:12.5px;letter-spacing:-.3px}
@@ -351,7 +365,10 @@
       </div>
 
       <div class="box" style="margin-top:0">
-        <div class="lbl">이번달 나갈 돈</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="lbl">이번달 나갈 돈</div>
+          <button class="rt-btn" onclick="rtOpen()">🗓 루틴</button>
+        </div>
         <div class="big2 num" id="lgOut" style="color:var(--minus)">₩0</div>
         <div class="hint num" id="lgOutWon"></div>
         <div class="trio wrap">
@@ -450,6 +467,18 @@
       <span style="font-weight:700">이 날 합계</span>
       <span class="num" id="yjDayTotal" style="font-weight:700">₩0</span>
     </div>
+  </div>
+</div>
+
+<!-- ══ 루틴 창 (요일별 잔소리 스케줄) ═════════════════════ -->
+<div class="modal" id="rtModal" hidden onclick="if(event.target===this)rtClose()">
+  <div class="modal-box" style="max-height:82vh;overflow:auto;display:flex;flex-direction:column">
+    <div class="modal-t" style="display:flex;justify-content:space-between;align-items:center">
+      <span>제호 루틴</span>
+      <button onclick="rtClose()" style="border:none;background:none;font:700 18px Pretendard;color:var(--muted);cursor:pointer">✕</button>
+    </div>
+    <div class="rt-tabs" id="rtTabs"></div>
+    <div class="rt-list" id="rtList"></div>
   </div>
 </div>
 
@@ -1206,6 +1235,39 @@ window.addEventListener('resize', () => {
     lgRender();
   };
   window.lgDelSpend = function(i){ var a=loadSpend(); a.splice(i,1); saveSpend(a); lgRender(); };
+  // ── 제호 루틴 (예진봇 알람과 같은 스케줄) ─────────────────
+  var RT_DATA = {"mon": [{"t": "06:00", "m": "🌅 월요일이야, 일어나! 6시. 오늘은 운동 없으니까 바로 익산 가게로 직행해. 꾸물대지 말고."}, {"t": "09:20", "m": "🏪 출근 준비 다 했어? 빠뜨린 거 없나 다시 한 번 봐. 나중에 아 뭐 놓고 왔다 하지 말고."}, {"t": "10:30", "m": "📊 주간 결산 세 줄 보낼 시간. 클립메이트 숫자, 영상 4개, 수익. 지금 안 하면 또 안 하잖아."}, {"t": "12:00", "m": "💳 지난주 지출 1분만 점검해. 신용카드 수동결제 0건 맞지? 새는 돈 없나 두 눈 뜨고 봐."}, {"t": "19:00", "m": "🏠 퇴근했어? 저녁 제대로 먹어 — 밥 180g에 고기 150g. 대충 넘기지 말고."}, {"t": "20:00", "m": "🚀 클립메이트 30분. 응대·전환메시지·지표. 월요일부터 미루면 한 주 내내 밀려."}, {"t": "20:30", "m": "🎬 영상 ① 시작해. 8시 반이야. 오늘 안 만들면 그대로 밀리는 거 알지?"}, {"t": "22:30", "m": "📚 강의 30분 볼 시간. 딱 30분만 집중해. 졸지 말고."}, {"t": "22:50", "m": "📝 내일 첫 작업 한 줄 적어 놓고 자. 매번 말하게 하지 말고."}, {"t": "23:00", "m": "😴 11시야. 그만 자. 이불 덮고. 알겠지?"}], "tue": [{"t": "07:00", "m": "🌅 야 일어나! 벌써 7시야. 강아지 밥 아직도 안 줬지? 눈 뜨자마자 밥 주고 청소부터 해. 미루지 말고."}, {"t": "07:05", "m": "⚖️ 화요일 아침이야, 공복 체중 재서 기록해. 나중에 재면 까먹잖아, 지금."}, {"t": "07:30", "m": "💪 운동 안 나가고 뭐 해. 7시 반이라고. 어제도 빼먹었잖아, 오늘까지 미룰 거야? 얼른 나가."}, {"t": "08:45", "m": "🚿 왔으면 씻어. 아침 꼭 챙겨 먹고 — 밥 150g에 계란 4개, 우유. 또 굶고 나가면 알지?"}, {"t": "09:20", "m": "🥚 출근해야지! 삶은 계란 2개 챙겼어? 맨날 빈손으로 나가서 배고프다 하지 말고 지금 챙겨."}, {"t": "16:00", "m": "🥛 간식 시간이야. 우유에 바나나 먹어. 점심 부실하게 때웠으면 계란도 하나 더 먹고."}, {"t": "19:00", "m": "🏠 퇴근했어? 저녁 제대로 먹어 — 밥 180g에 고기 150g. 라면 같은 걸로 대충 때우지 말고."}, {"t": "20:00", "m": "🚀 클립메이트 볼 시간이야, 30분만. 응대·전환메시지·지표 확인. 이따 한다 하지 말고 지금 해."}, {"t": "20:30", "m": "🎬 영상 ② 시작할 시간. 어제 ① 했으니 오늘은 ②. 미루지 마."}, {"t": "22:30", "m": "💻 코딩 30분. 어제 하던 거 이어서. 손 풀어."}, {"t": "22:50", "m": "📝 자기 전에 내일 첫 작업 한 줄만 적어 놔. 아침에 뭐부터 할지 또 멍때리지 말고."}, {"t": "23:00", "m": "😴 11시다. 폰 그만 보고 자. 이불 잘 덮고. 내일 또 피곤하다 소리 하기만 해."}], "wed": [{"t": "07:00", "m": "🌅 야 일어나! 벌써 7시야. 강아지 밥 아직도 안 줬지? 눈 뜨자마자 밥 주고 청소부터 해. 미루지 말고."}, {"t": "07:30", "m": "💪 운동 안 나가고 뭐 해. 7시 반이라고. 어제도 빼먹었잖아, 오늘까지 미룰 거야? 얼른 나가."}, {"t": "08:45", "m": "🚿 왔으면 씻어. 아침 꼭 챙겨 먹고 — 밥 150g에 계란 4개, 우유. 또 굶고 나가면 알지?"}, {"t": "09:20", "m": "🥚 출근해야지! 삶은 계란 2개 챙겼어? 맨날 빈손으로 나가서 배고프다 하지 말고 지금 챙겨."}, {"t": "16:00", "m": "🥛 간식 시간이야. 우유에 바나나 먹어. 점심 부실하게 때웠으면 계란도 하나 더 먹고."}, {"t": "19:00", "m": "🏠 퇴근했어? 저녁 제대로 먹어 — 밥 180g에 고기 150g. 라면 같은 걸로 대충 때우지 말고."}, {"t": "20:00", "m": "🚀 클립메이트 볼 시간이야, 30분만. 응대·전환메시지·지표 확인. 이따 한다 하지 말고 지금 해."}, {"t": "20:30", "m": "🎬 영상 ③ 차례야. 벌써 수요일, 절반 왔어. 얼른 시작해."}, {"t": "22:30", "m": "📚 강의 30분. 눈 감고 듣는 척하지 말고 제대로."}, {"t": "22:50", "m": "📝 자기 전에 내일 첫 작업 한 줄만 적어 놔. 아침에 뭐부터 할지 또 멍때리지 말고."}, {"t": "23:00", "m": "😴 11시다. 폰 그만 보고 자. 이불 잘 덮고. 내일 또 피곤하다 소리 하기만 해."}], "thu": [{"t": "07:00", "m": "🌅 야 일어나! 벌써 7시야. 강아지 밥 아직도 안 줬지? 눈 뜨자마자 밥 주고 청소부터 해. 미루지 말고."}, {"t": "07:30", "m": "💪 운동 안 나가고 뭐 해. 7시 반이라고. 어제도 빼먹었잖아, 오늘까지 미룰 거야? 얼른 나가."}, {"t": "08:45", "m": "🚿 왔으면 씻어. 아침 꼭 챙겨 먹고 — 밥 150g에 계란 4개, 우유. 또 굶고 나가면 알지?"}, {"t": "09:20", "m": "🥚 출근해야지! 삶은 계란 2개 챙겼어? 맨날 빈손으로 나가서 배고프다 하지 말고 지금 챙겨."}, {"t": "16:00", "m": "🥛 간식 시간이야. 우유에 바나나 먹어. 점심 부실하게 때웠으면 계란도 하나 더 먹고."}, {"t": "19:00", "m": "🏠 퇴근했어? 저녁 제대로 먹어 — 밥 180g에 고기 150g. 라면 같은 걸로 대충 때우지 말고."}, {"t": "20:00", "m": "🚀 클립메이트 볼 시간이야, 30분만. 응대·전환메시지·지표 확인. 이따 한다 하지 말고 지금 해."}, {"t": "20:30", "m": "🎬 영상 ④ 마지막 하나. 오늘까지 네 개 채우는 거야. 딴짓 말고 시작."}, {"t": "22:30", "m": "💻 코딩 30분. 오늘도 딱 30분. 미루면 실력 안 늘어."}, {"t": "22:50", "m": "📝 자기 전에 내일 첫 작업 한 줄만 적어 놔. 아침에 뭐부터 할지 또 멍때리지 말고."}, {"t": "23:00", "m": "😴 11시다. 폰 그만 보고 자. 이불 잘 덮고. 내일 또 피곤하다 소리 하기만 해."}], "fri": [{"t": "07:00", "m": "🌅 야 일어나! 벌써 7시야. 강아지 밥 아직도 안 줬지? 눈 뜨자마자 밥 주고 청소부터 해. 미루지 말고."}, {"t": "07:30", "m": "💪 운동 안 나가고 뭐 해. 7시 반이라고. 어제도 빼먹었잖아, 오늘까지 미룰 거야? 얼른 나가."}, {"t": "08:45", "m": "🚿 왔으면 씻어. 아침 꼭 챙겨 먹고 — 밥 150g에 계란 4개, 우유. 또 굶고 나가면 알지?"}, {"t": "09:20", "m": "🥚 출근해야지! 삶은 계란 2개 챙겼어? 맨날 빈손으로 나가서 배고프다 하지 말고 지금 챙겨."}, {"t": "16:00", "m": "🥛 간식 시간이야. 우유에 바나나 먹어. 점심 부실하게 때웠으면 계란도 하나 더 먹고."}, {"t": "19:00", "m": "🏠 퇴근했어? 저녁 제대로 먹어 — 밥 180g에 고기 150g. 라면 같은 걸로 대충 때우지 말고."}, {"t": "20:00", "m": "🚀 클립메이트 볼 시간이야, 30분만. 응대·전환메시지·지표 확인. 이따 한다 하지 말고 지금 해."}, {"t": "20:30", "m": "📚 금요일이니까 강의 1시간 듣고, 실행과제 1개는 꼭 뽑아. 듣기만 하고 끝내면 소용없어."}, {"t": "22:30", "m": "💻 코딩 1시간 이어서. 주말 오니까 오늘 좀 더 해 둬."}, {"t": "22:50", "m": "📝 자기 전에 내일 첫 작업 한 줄만 적어 놔. 아침에 뭐부터 할지 또 멍때리지 말고."}, {"t": "23:00", "m": "😴 11시다. 폰 그만 보고 자. 이불 잘 덮고. 내일 또 피곤하다 소리 하기만 해."}], "sat": [{"t": "19:00", "m": "🚗 익산 갈 시간이야. 예산 30만 원, 현금이랑 체크카드만 챙겨. 신용카드는 절대 긁지 마!"}], "sun": []};
+  var RT_DAYS = [['mon','월'],['tue','화'],['wed','수'],['thu','목'],['fri','금'],['sat','토'],['sun','일']];
+  var rtDay = 'mon';
+
+  window.rtOpen = function(){
+    // 오늘 요일로 시작
+    var wd = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+    rtDay = wd;
+    rtDrawTabs();
+    rtDrawList();
+    document.getElementById('rtModal').hidden = false;
+  };
+  window.rtClose = function(){ document.getElementById('rtModal').hidden = true; };
+  window.rtPick = function(d){ rtDay = d; rtDrawTabs(); rtDrawList(); };
+
+  function rtDrawTabs(){
+    var wd = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+    document.getElementById('rtTabs').innerHTML = RT_DAYS.map(function(x){
+      var cls = (x[0]===rtDay?'on ':'') + (x[0]===wd?'today':'');
+      return '<button class="'+cls.trim()+'" data-d="'+x[0]+'" onclick="rtPick(this.dataset.d)">'+x[1]+'</button>';
+    }).join('');
+  }
+  function rtDrawList(){
+    var rows = RT_DATA[rtDay] || [];
+    document.getElementById('rtList').innerHTML = rows.length
+      ? rows.map(function(r){
+          return '<div class="rt-row"><span class="rt-time">'+r.t+'</span>'
+               + '<span class="rt-msg">'+escH(r.m)+'</span></div>';
+        }).join('')
+      : '<div class="rt-empty">이 날은 정해진 루틴이 없어요.</div>';
+  }
+
   // 고정지출은 창으로 본다. 목록이 길어 접기보다 창이 낫다.
   window.lgFxOpen = function(open){
     document.getElementById('lgFxModal').hidden = !open;

@@ -319,6 +319,8 @@ store['zzbit_yj_tx'] = JSON.stringify([
   { id: 3, date: '2026-08-07', type: 'out',  cat: '월세', amt: 500000 },   // 예전 규칙 = 케뱅
   { id: 4, date: '2026-08-08', type: 'move', cat: '',    amt: 200000 },    // dir 없음 = 케이→토스
 ]);
+// 데이터가 8월이므로 화면도 8월로 (내역 렌더 확인용)
+while ($('yjMonth').textContent !== '2026년 8월') W.yjMove($('yjMonth').textContent > '2026년 8월' ? -1 : 1);
 W.yjRender();
 check('케이뱅크', bal().k, SK + 1000000 - 500000 - 200000);
 check('토스뱅크', bal().t, ST - 7000 + 200000);
